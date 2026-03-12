@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "Build SimpleRNN",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-g",
+                "-std=c++17",
+                "-Wall",
+                "-I/usr/include/eigen3",                  // ← this is the standard Ubuntu path
+                "-I${workspaceFolder}/includes",
+                "${workspaceFolder}/main.cpp",
+                "${workspaceFolder}/src/*.cpp",
+                "-o",
+                "${workspaceFolder}/main"                  // or move to build/ if preferred
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

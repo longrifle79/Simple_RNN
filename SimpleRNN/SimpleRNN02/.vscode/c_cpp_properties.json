@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",  // Recursive everything
+                "${workspaceFolder}/includes",
+                "/usr/include/eigen3"  // Eigen headers
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++",  // Better for C++
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64"
+            // Remove compilerArgs—it's not needed/relevant here
+        }
+    ],
+    "version": 4
+}

@@ -1,0 +1,23 @@
+{
+    // Your existing ROS settings...
+    "ROS2.distro": "jazzy",
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/jazzy/lib/python3.12/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/opt/ros/jazzy/lib/python3.12/site-packages"
+    ],
+
+    // Code Runner customizations
+    "code-runner.runInTerminal": true,
+    "code-runner.saveFileBeforeRun": true,
+    "code-runner.clearPreviousOutput": true,
+    "code-runner.ignoreSelection": true,
+    "code-runner.preserveFocus": false,
+    "code-runner.executorMap": {
+        "cpp": "cd $dir && g++ -g -std=c++17 -I$dir/includes -I/usr/include/eigen3 main.cpp src/*.cpp -o $fileNameWithoutExt && $dir/$fileNameWithoutExt"
+        // Added -g for debug info (matches tasks.json)
+        // main.cpp explicit (in root)
+        // src/*.cpp glob for all sources in src/
+    }
+}
