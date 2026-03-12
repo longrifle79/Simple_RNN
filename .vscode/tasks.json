@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Project",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",                  // Debug info for gdb
+                "-std=c++17",          // Use C++17 standard (required for <filesystem>, etc.)
+                "-Iincludes",          // Include path for header files
+                "main.cpp",            // Always compile the main entry point (assumed in project root)
+                "src/*.cpp",           // Automatically include ALL .cpp files in src/ (shell glob expansion)
+                "-o",
+                "main"                 // Output executable name
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Multi-file build that automatically includes all .cpp files in src/ folder"
+        }
+    ]
+}

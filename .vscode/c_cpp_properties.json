@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",  // Recursive everything
+                "${workspaceFolder}/includes"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++",  // Better for C++
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64"
+            // Remove compilerArgs—it's not needed/relevant here
+        }
+    ],
+    "version": 4
+}
