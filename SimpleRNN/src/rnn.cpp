@@ -11,7 +11,7 @@
 // ────────────────────────────────────────────────────────────────────────────────
 SimpleRNN::SimpleRNN(int in_size, int hid_size)     // Parameters: input size & desired hidden layer size
     : input_size(in_size),                          // Store how many numbers come in each timestep (usually 1 = univariate)
-      hidden_size(hid_size),                        // Store how many "memory cells" / neurons this RNN has in its hidden layer
+      hidden_size(hid_size),                        // Store how many "memory cells" / neurons this RNN has in its hidden layer (controls capacity)
 
       // Create the three main weight matrices with correct dimensions
       // Wxh = "input to hidden" weights – turns input vector into hidden vector contribution
