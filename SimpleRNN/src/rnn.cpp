@@ -182,3 +182,5 @@ double SimpleRNN::compute_loss(const std::vector<VectorXd>& targets,
     // This number is what we want to make SMALLER during training
     return total_loss / targets.size();
 }
+
+
