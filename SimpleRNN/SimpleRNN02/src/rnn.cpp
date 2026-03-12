@@ -117,9 +117,7 @@ VectorXd SimpleRNN::forward_step(const VectorXd& x_t, const VectorXd& h_prev) co
 // FORWARD SEQUENCE – runs the RNN over many timesteps (whole sequence)
 // Fills two output vectors by reference so caller can see all hidden states & predictions
 // ────────────────────────────────────────────────────────────────────────────────
-void SimpleRNN::forward_sequence(const std::vector<VectorXd>& inputs,
-                                 std::vector<VectorXd>& hidden_states,
-                                 std::vector<VectorXd>& outputs) const
+void SimpleRNN::forward_sequence(const std::vector<VectorXd>& inputs, std::vector<VectorXd>& hidden_states, std::vector<VectorXd>& outputs) const
 {
     // Clear any old data that might be in these vectors
     hidden_states.clear();
