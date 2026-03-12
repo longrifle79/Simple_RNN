@@ -15,7 +15,7 @@
     "code-runner.ignoreSelection": true,
     "code-runner.preserveFocus": false,
     "code-runner.executorMap": {
-        "cpp": "cd $dir && g++ -g -std=c++17 -I$dir/includes main.cpp src/*.cpp -o $fileNameWithoutExt && $dir/$fileNameWithoutExt"
+        "cpp": "cd $dir && g++ -g -std=c++17 -I$dir/includes -I/usr/include/eigen3 main.cpp src/*.cpp -o $fileNameWithoutExt && $dir/$fileNameWithoutExt"
         // Added -g for debug info (matches tasks.json)
         // main.cpp explicit (in root)
         // src/*.cpp glob for all sources in src/
