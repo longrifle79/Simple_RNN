@@ -70,7 +70,7 @@ int main()
         // Print timestep number (starting from 1 for readability)
         std::cout << "t=" << i + 1;
 
-        // Print what the model predicted (access element 0 because output size = 1)
+        // Print what the model predicted (access element 0 because output size = 1) test
         std::cout << ": predicted = " << predictions[i](0);
 
         // Also show what the actual input was at this timestep
