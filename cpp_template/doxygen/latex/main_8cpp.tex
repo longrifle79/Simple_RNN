@@ -1,0 +1,128 @@
+\doxysection{main.\+cpp File Reference}
+\hypertarget{main_8cpp}{}\label{main_8cpp}\index{main.cpp@{main.cpp}}
+
+
+Program entry point for the Simple\+NN linear regression CSV data loader.  
+
+
+{\ttfamily \+\#include $<$iostream$>$}\newline
+{\ttfamily \+\#include $<$fstream$>$}\newline
+{\ttfamily \+\#include $<$list$>$}\newline
+{\ttfamily \+\#include $<$string$>$}\newline
+{\ttfamily \+\#include $<$cstdlib$>$}\newline
+{\ttfamily \+\#include $<$cstring$>$}\newline
+{\ttfamily \+\#include $<$filesystem$>$}\newline
+{\ttfamily \+\#include "{}csv\+Tools.\+h"{}}\newline
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \doxymbox{\hyperlink{main_8cpp_ae66f6b31b5ad750f1fe042a706a4e3d4}{main}} ()
+\begin{DoxyCompactList}\small\item\em Main program entry point. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Program entry point for the Simple\+NN linear regression CSV data loader. 
+
+This file contains the {\ttfamily \doxylink{main_8cpp_ae66f6b31b5ad750f1fe042a706a4e3d4}{main()}} function, which serves as the executable\textquotesingle{}s starting point. It demonstrates the usage of the CSV utilities from \doxylink{csvTools_8h}{csv\+Tools.\+h}/\+cpp:\+
+\begin{DoxyItemize}
+\item Specifies a hard-\/coded directory containing CSV datasets.
+\item Loads all CSV files into a 3D nested list structure (files → rows → float values).
+\item Prints the total number of files loaded.
+\item Outputs the full contents of all tables for verification.
+\end{DoxyItemize}
+
+The program is designed as a simple command-\/line tool for quick data inspection and validation during development of regression models in the Simple\+NN project.
+
+\begin{DoxyNote}{Note}
+
+\begin{DoxyItemize}
+\item The CSV directory path is currently hard-\/coded for convenience. In a production or reusable tool, this should be passed as a command-\/line argument (e.\+g., via argc/\+argv) or configured via a file/\+environment variable.
+\item No error handling beyond what csv\+Tools provides—assumes valid numeric CSVs.
+\item Output is to stdout; suitable for piping or redirection (e.\+g., {\ttfamily ./\+main \texorpdfstring{$>$}{>} output.\+txt}).
+\end{DoxyItemize}
+\end{DoxyNote}
+\begin{DoxyWarning}{Warning}
+
+\begin{DoxyItemize}
+\item Relies on csv\+Tools for parsing—see its documentation for limitations (e.\+g., no support for quoted fields, fixed buffer size).
+\item Hard-\/coded path ties the executable to a specific filesystem location.
+\end{DoxyItemize}
+\end{DoxyWarning}
+\begin{DoxyAuthor}{Author}
+Gary 
+\end{DoxyAuthor}
+\begin{DoxyVersion}{Version}
+0.\+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+February 2026
+\end{DoxyDate}
+\begin{DoxySeeAlso}{See also}
+\doxylink{csvTools_8h}{csv\+Tools.\+h} for the core CSV loading and printing API. 
+
+\doxylink{csvTools_8h_a6a8b33027c70f682888c9652a2d4f1f2}{load\+\_\+all\+\_\+csv\+\_\+from\+\_\+directory()} for directory scanning details. 
+
+\doxylink{csvTools_8h_a87bb3a108ad53a80c9b6c966cc299df2}{print\+CSV\+\_\+all()} for structured output formatting. 
+\end{DoxySeeAlso}
+
+
+\label{doc-func-members}
+\Hypertarget{main_8cpp_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{main_8cpp_ae66f6b31b5ad750f1fe042a706a4e3d4}\index{main.cpp@{main.cpp}!main@{main}}
+\index{main@{main}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily \label{main_8cpp_ae66f6b31b5ad750f1fe042a706a4e3d4} 
+int main (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Main program entry point. 
+
+\texorpdfstring{$<$}{<} For std::\+cout (console output) For file streams (used indirectly via csv\+Tools) \texorpdfstring{$<$}{<} For nested dynamic storage of CSV data \texorpdfstring{$<$}{<} For directory path string \texorpdfstring{$<$}{<} For general utilities (inherited from csv\+Tools) For buffer operations (inherited from csv\+Tools) \texorpdfstring{$<$}{<} For directory existence checks (inherited from csv\+Tools) CSV parsing and printing utilities 
+
+Initializes the CSV loading process:\+
+\begin{DoxyEnumerate}
+\item Defines the target directory containing regression datasets.
+\item Calls \doxylink{csvTools_8h_a6a8b33027c70f682888c9652a2d4f1f2}{load\+\_\+all\+\_\+csv\+\_\+from\+\_\+directory()} to parse all .csv files.
+\item Reports the number of files successfully loaded.
+\item Prints the full contents of all parsed tables.
+\end{DoxyEnumerate}
+
+\begin{DoxyReturn}{Returns}
+int Exit status:\+ 0 on success (standard convention).
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+
+\begin{DoxyItemize}
+\item The 3D list structure represents:\+ files → rows → columns (as floats).
+\item This simple driver is ideal for quick testing and debugging of the csv\+Tools module.
+\item No command-\/line arguments are processed—extend with argc/\+argv for flexibility.
+\end{DoxyItemize}
+\end{DoxyNote}
+Execution flow:\+
+\begin{DoxyItemize}
+\item Hard-\/coded directory path for reproducibility during development.
+\item Relies on csv\+Tools for all heavy lifting (parsing, validation, printing).
+\item Minimal error checking here—csv\+Tools handles file/\+directory issues with diagnostics.
+\end{DoxyItemize}
+
+\begin{DoxyWarning}{Warning}
+Hard-\/coded absolute path—change to match your environment or make configurable. 
+\end{DoxyWarning}
+Target directory containing CSV regression datasets.
+
+\begin{DoxyNote}{Note}
+Update this path if your csv\+\_\+data folder moves. Consider making it a command-\/line parameter for portability.
+\end{DoxyNote}
+Loaded 3D structure containing all parsed CSV data.
+
+Structure:\+ files → rows → columns (floats). Empty if directory invalid or no CSVs found.
+
+Report total number of CSV files processed.
+
+Print complete contents of all loaded tables.
+
+\begin{DoxyReturn}{Returns}
+Program exit status (0 = success).
+\end{DoxyReturn}

@@ -1,0 +1,30 @@
+\doxysection{csv\+Tools.\+h}
+\hypertarget{csvTools_8h_source}{}\label{csvTools_8h_source}\index{includes/csvTools.h@{includes/csvTools.h}}
+\doxymbox{\hyperlink{csvTools_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#ifndef\ \_\_CSVTOOLS\_H\_\_}}
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\#define\ \_\_CSVTOOLS\_H\_\_}}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#include\ <iostream>}\ \ \ \ \ \ }
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#include\ <fstream>}\ \ \ \ \ \ \ }
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#include\ <list>}\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#include\ <string>}\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00029\ \textcolor{preprocessor}{\#include\ <cstdlib>}\ \ \ \ \ \ \ }
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#include\ <cstring>}\ \ \ \ \ \ \ }
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\#include\ <filesystem>}\ \ \ \ }
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00034\ \textcolor{keyword}{namespace\ }fs\ =\ std::filesystem;}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00051\ std::list<std::list<float>>\ \doxymbox{\hyperlink{csvTools_8h_a9d49b1c46dea62299716c16f989659b9}{csv2list}}(std::string\ filename);}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00059\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{csvTools_8h_aa3a7ea3bbe7621fd0f3d9d73be63b917}{printCSV}}(std::list<std::list<float>>\ \&csv);}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00074\ std::list<std::list<std::list<float>>>\ \doxymbox{\hyperlink{csvTools_8h_a6a8b33027c70f682888c9652a2d4f1f2}{load\_all\_csv\_from\_directory}}(\textcolor{keyword}{const}\ std::string\&\ dir\_path);}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00082\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{csvTools_8h_a87bb3a108ad53a80c9b6c966cc299df2}{printCSV\_all}}(\textcolor{keyword}{const}\ std::list<std::list<std::list<float>>>\&\ all\_csv\_data);}
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00084\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ \_\_CSVTOOLS\_H\_\_}}
+
+\end{DoxyCode}

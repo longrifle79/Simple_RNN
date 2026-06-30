@@ -1,0 +1,153 @@
+\doxysection{src/\+csv\+Tools.cpp File Reference}
+\hypertarget{csvTools_8cpp}{}\label{csvTools_8cpp}\index{src/csvTools.cpp@{src/csvTools.cpp}}
+
+
+Implementation of CSV parsing and printing utilities for the Simple\+NN project.  
+
+
+{\ttfamily \+\#include "{}csv\+Tools.\+h"{}}\newline
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std::\+list$<$ std::\+list$<$ float $>$ $>$ \doxymbox{\hyperlink{csvTools_8cpp_a9d49b1c46dea62299716c16f989659b9}{csv2list}} (std::\+string filename)
+\begin{DoxyCompactList}\small\item\em Parses a single CSV file into a 2D list of floats (rows → columns). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{csvTools_8cpp_aa3a7ea3bbe7621fd0f3d9d73be63b917}{print\+CSV}} (std::\+list$<$ std::\+list$<$ float $>$ $>$ \&csv)
+\begin{DoxyCompactList}\small\item\em Prints a single parsed CSV table to stdout. \end{DoxyCompactList}\item 
+std::\+list$<$ std::\+list$<$ std::\+list$<$ float $>$ $>$ $>$ \doxymbox{\hyperlink{csvTools_8cpp_a6a8b33027c70f682888c9652a2d4f1f2}{load\+\_\+all\+\_\+csv\+\_\+from\+\_\+directory}} (const std::\+string \&dir\+\_\+path)
+\begin{DoxyCompactList}\small\item\em Loads all CSV files from a directory into a 3D list structure. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{csvTools_8cpp_a87bb3a108ad53a80c9b6c966cc299df2}{print\+CSV\+\_\+all}} (const std::\+list$<$ std::\+list$<$ std::\+list$<$ float $>$ $>$ $>$ \&all\+\_\+csv\+\_\+data)
+\begin{DoxyCompactList}\small\item\em Prints all loaded CSV tables with file separators and row numbering. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Implementation of CSV parsing and printing utilities for the Simple\+NN project. 
+
+This file contains the definitions for functions declared in \doxylink{csvTools_8h}{csv\+Tools.\+h}. It provides:\+
+\begin{DoxyItemize}
+\item Low-\/level char-\/by-\/char CSV parsing into nested std::\+list structures.
+\item Header skipping and basic error handling.
+\item Directory scanning for multiple CSV files.
+\item Structured printing for verification and debugging.
+\end{DoxyItemize}
+
+\begin{DoxyNote}{Note}
+The parser is designed for simple numeric CSVs (no quoted fields, no escaped commas). It uses fixed-\/size buffering (100 chars per field) for simplicity—suitable for small datasets. For production use, consider libraries like rapidcsv for robustness.
+\end{DoxyNote}
+\begin{DoxySeeAlso}{See also}
+\doxylink{csvTools_8h}{csv\+Tools.\+h} for function declarations and high-\/level API documentation. 
+\end{DoxySeeAlso}
+
+
+\label{doc-func-members}
+\Hypertarget{csvTools_8cpp_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{csvTools_8cpp_a9d49b1c46dea62299716c16f989659b9}\index{csvTools.cpp@{csvTools.cpp}!csv2list@{csv2list}}
+\index{csv2list@{csv2list}!csvTools.cpp@{csvTools.cpp}}
+\doxysubsubsection{\texorpdfstring{csv2list()}{csv2list()}}
+{\footnotesize\ttfamily \label{csvTools_8cpp_a9d49b1c46dea62299716c16f989659b9} 
+std::\+list$<$ std::\+list$<$ float $>$ $>$ csv2list (\begin{DoxyParamCaption}\item[{std::\+string}]{filename}{}\end{DoxyParamCaption})}
+
+
+
+Parses a single CSV file into a 2D list of floats (rows → columns). 
+
+\texorpdfstring{$<$}{<} For directory scanning and existence checks
+
+Opens the file, skips the first line (assumed header), then reads char-\/by-\/char. Fields are separated by commas, rows by newlines. Uses strtof for conversion with validation.
+
+
+\begin{DoxyParams}{Parameters}
+{\em filename} & Path to the CSV file (std::\+string). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+std::\+list$<$std::\+list$<$float$>$$>$ representing rows of parsed float values. Empty list on file error or no data rows.
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+
+\begin{DoxyItemize}
+\item Empty fields (e.\+g., consecutive commas) are skipped (treated as no value).
+\item Invalid numbers (non-\/numeric characters) are skipped with a diagnostic message.
+\item Fixed buffer size (100 chars) — fields longer than 99 chars are truncated.
+\item Last field on final line handled even without trailing newline.
+\end{DoxyItemize}
+\end{DoxyNote}
+\begin{DoxyWarning}{Warning}
+Does not support quoted fields, escaped commas, or string data. Assumes all values are numeric floats.
+\end{DoxyWarning}
+Parsing logic:\+
+\begin{DoxyItemize}
+\item Accumulates characters into a buffer until \textquotesingle{},\textquotesingle{} or \textquotesingle{}~\newline
+\textquotesingle{}.
+\item Null-\/terminates and parses with strtof.
+\item Validates full consumption (endptr check).
+\item Uses emplace\+\_\+back/\+push\+\_\+back for efficient list construction. 
+\end{DoxyItemize}\texorpdfstring{$<$}{<} Outer list (rows), inner lists (columns)
+
+\texorpdfstring{$<$}{<} Fixed buffer for field accumulation
+
+\texorpdfstring{$<$}{<} Index in buffer for current field
+
+\texorpdfstring{$<$}{<} Input file stream
+
+\texorpdfstring{$<$}{<} Current character read from stream\Hypertarget{csvTools_8cpp_a6a8b33027c70f682888c9652a2d4f1f2}\index{csvTools.cpp@{csvTools.cpp}!load\_all\_csv\_from\_directory@{load\_all\_csv\_from\_directory}}
+\index{load\_all\_csv\_from\_directory@{load\_all\_csv\_from\_directory}!csvTools.cpp@{csvTools.cpp}}
+\doxysubsubsection{\texorpdfstring{load\_all\_csv\_from\_directory()}{load\_all\_csv\_from\_directory()}}
+{\footnotesize\ttfamily \label{csvTools_8cpp_a6a8b33027c70f682888c9652a2d4f1f2} 
+std::\+list$<$ std::\+list$<$ std::\+list$<$ float $>$ $>$ $>$ load\+\_\+all\+\_\+csv\+\_\+from\+\_\+directory (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{dir\+\_\+path}{}\end{DoxyParamCaption})}
+
+
+
+Loads all CSV files from a directory into a 3D list structure. 
+
+Scans directory, filters .csv/\+.CSV files, parses each with csv2list.
+
+
+\begin{DoxyParams}{Parameters}
+{\em dir\+\_\+path} & Path to directory containing CSVs. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+3D list:\+ files → rows → columns (floats). Empty if directory invalid or no CSVs.
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+Uses std::\+filesystem for portable directory iteration. Adds tables even if empty (configurable via condition). 
+\end{DoxyNote}
+\Hypertarget{csvTools_8cpp_aa3a7ea3bbe7621fd0f3d9d73be63b917}\index{csvTools.cpp@{csvTools.cpp}!printCSV@{printCSV}}
+\index{printCSV@{printCSV}!csvTools.cpp@{csvTools.cpp}}
+\doxysubsubsection{\texorpdfstring{printCSV()}{printCSV()}}
+{\footnotesize\ttfamily \label{csvTools_8cpp_aa3a7ea3bbe7621fd0f3d9d73be63b917} 
+void print\+CSV (\begin{DoxyParamCaption}\item[{std::\+list$<$ std::\+list$<$ float $>$ $>$ \&}]{csv}{}\end{DoxyParamCaption})}
+
+
+
+Prints a single parsed CSV table to stdout. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em csv} & Reference to 2D list (rows → columns) to print.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyNote}{Note}
+Const-\/correct iteration for safety. Formats as space-\/separated values with row numbers. 
+\end{DoxyNote}
+\Hypertarget{csvTools_8cpp_a87bb3a108ad53a80c9b6c966cc299df2}\index{csvTools.cpp@{csvTools.cpp}!printCSV\_all@{printCSV\_all}}
+\index{printCSV\_all@{printCSV\_all}!csvTools.cpp@{csvTools.cpp}}
+\doxysubsubsection{\texorpdfstring{printCSV\_all()}{printCSV\_all()}}
+{\footnotesize\ttfamily \label{csvTools_8cpp_a87bb3a108ad53a80c9b6c966cc299df2} 
+void print\+CSV\+\_\+all (\begin{DoxyParamCaption}\item[{const std::\+list$<$ std::\+list$<$ std::\+list$<$ float $>$ $>$ $>$ \&}]{all\+\_\+csv\+\_\+data}{}\end{DoxyParamCaption})}
+
+
+
+Prints all loaded CSV tables with file separators and row numbering. 
+
+Prints all loaded CSV tables with clear separation.
+
+
+\begin{DoxyParams}{Parameters}
+{\em all\+\_\+csv\+\_\+data} & Const reference to 3D list (files → rows → columns).\\
+\hline
+\end{DoxyParams}
+\begin{DoxyNote}{Note}
+Provides clear visual separation between files for debugging/\+verification. 
+\end{DoxyNote}

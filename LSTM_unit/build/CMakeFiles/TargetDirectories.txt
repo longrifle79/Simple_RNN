@@ -1,0 +1,3 @@
+/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles/main.dir
+/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles/edit_cache.dir
+/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles/rebuild_cache.dir

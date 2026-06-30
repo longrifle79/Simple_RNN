@@ -1,0 +1,25 @@
+{
+    // Your existing ROS settings...
+    "ROS2.distro": "jazzy",
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/jazzy/lib/python3.12/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/opt/ros/jazzy/lib/python3.12/site-packages"
+    ],
+
+    // Code Runner customizations
+    "code-runner.runInTerminal": true,
+    "code-runner.saveFileBeforeRun": true,
+    "code-runner.clearPreviousOutput": true,
+    "code-runner.ignoreSelection": true,
+    "code-runner.preserveFocus": false,
+
+    "code-runner.executorMap": {
+        // Recommended: Build using CMake (best option now that you have CMakeLists.txt)
+        "cpp": "cd $dir && cmake --build build && ./build/main"
+
+        // Alternative: Direct g++ (use only for quick tests)
+        // "cpp": "cd $dir && g++ -g -std=c++17 -I$dir/includes main.cpp $(find $dir/src -name '*.cpp') -o $fileNameWithoutExt && $dir/$fileNameWithoutExt"
+    }
+}
