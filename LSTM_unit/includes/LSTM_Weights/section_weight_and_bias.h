@@ -4,14 +4,14 @@
 #include "randomize_weight.h"
 
 
-class section_weight_and_bias:RandomizeWeight
+class Section_Weight_And_Bias:Randomize_Weight
 {
     private:
         std::vector<float> block_weights;
 
     public:
 
-        section_weight_and_bias();
+        Section_Weight_And_Bias();
 
         float get_wh();
         int set_wh(float new_weight);

@@ -5,13 +5,13 @@
 
 
 
-class LSTM_unit_weights:section_weight_and_bias
+class Lstm_Unit_Weights:section_weight_and_bias
 {
     private:
         std::vector<section_weight_and_bias> LSTM_weights;
 
     public:
-        LSTM_unit_weights();
+        Lstm_Unit_Weights();
 
 
 //*****************   Forget Gate Weights and Biases   *****************//

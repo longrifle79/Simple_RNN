@@ -1,13 +1,13 @@
 #include <random>
 
-class RandomizeWeight
+class Randomize_Weight
 {
     private:
         float maximum;
         float minimum;
     public:
-        RandomizeWeight();
-        RandomizeWeight(float min, float max);
+        Randomize_Weight();
+        Randomize_Weight(float min, float max);
 
         static float getFloat(float min, float max);
         float getFloat();

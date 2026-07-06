@@ -1,18 +1,18 @@
 #include "randomize_weight.h"
 
-RandomizeWeight::RandomizeWeight()
+Randomize_Weight::Randomize_Weight()
 {
-    // Constructor implementation (if needed)
+    
 }
 
-RandomizeWeight::RandomizeWeight(float min, float max)
+Randomize_Weight::Randomize_Weight(float min, float max)
 {
     minimum = min;
     maximum = max;
 }
 
 
-float RandomizeWeight::getFloat(float min, float max) 
+float Randomize_Weight::getFloat(float min, float max) 
 {
     static std::random_device rd;
     static std::mt19937 gen(rd());
@@ -20,7 +20,7 @@ float RandomizeWeight::getFloat(float min, float max)
     return dist(gen);
 }
 
-float RandomizeWeight::getFloat() 
+float Randomize_Weight::getFloat() 
 {
     static std::random_device rd;
     static std::mt19937 gen(rd());

@@ -4,12 +4,11 @@
 #include "tanh.h"
 
 
-class ActivationFunctions : public Tanh, public Sigmoid
+class Activation_Functions : public Tanh, public Sigmoid
 {
 public:
-    ActivationFunctions() = default;
+    Activation_Functions() = default;
 
-    // Bring methods from base classes into this scope so we can call them cleanly
     using Tanh::tanh;
     using Tanh::tanh_derivative;
 
