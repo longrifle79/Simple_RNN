@@ -2,10 +2,10 @@
 #define __INPUT_GATE_H__
 #include "activation_functions.h"
 
-class InputGate : ActivationFunctions
+class Input_Gate : Activation_Functions
 {
     public:
-        InputGate() = default;
+        Input_Gate() = default;
 
         float compute_input_gate(   float input, 
                                     float input_weight1, 

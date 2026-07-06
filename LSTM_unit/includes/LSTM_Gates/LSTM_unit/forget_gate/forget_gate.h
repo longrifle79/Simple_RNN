@@ -3,10 +3,10 @@
 #include "activation_functions.h"
 
 
-class ForgetGate : ActivationFunctions
+class Forget_Gate : Activation_Functions
 {
     public:
-        ForgetGate() = default;
+        Forget_Gate() = default;
 
         float compute_forget_gate(  float input, 
                                     float input_weight, 

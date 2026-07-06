@@ -1,7 +1,7 @@
 #include "forget_gate.h"
 
 
-float ForgetGate::compute_forget_gate(  float input, 
+float Forget_Gate::compute_forget_gate(  float input, 
                                         float input_weight,
                                         float prev_shrt_trm_mem, 
                                         float prev_shrt_trm_mem_weight, 

@@ -1,7 +1,7 @@
 #include "output_gate.h"
 
 
-        float OutputGate::compute_output_gate(  float input, 
+        float Output_Gate::compute_output_gate(  float input, 
                                                 float input_weight1, 
                                                 float short_term_memory, 
                                                 float short_term_memory_weight1, 

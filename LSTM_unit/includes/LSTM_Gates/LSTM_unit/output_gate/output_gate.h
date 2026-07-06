@@ -2,10 +2,10 @@
 #define __OUTPUT_GATE_H__
 #include "activation_functions.h"
 
-class OutputGate : ActivationFunctions
+class Output_Gate : Activation_Functions
 {
     public:
-        OutputGate() = default;
+        Output_Gate() = default;
 
         float compute_output_gate(  float input, 
                                     float input_weight1, 
