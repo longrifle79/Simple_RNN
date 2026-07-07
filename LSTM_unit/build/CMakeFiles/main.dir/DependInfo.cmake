@@ -9,11 +9,13 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/main.cpp" "CMakeFiles/main.dir/main.cpp.o" "gcc" "CMakeFiles/main.dir/main.cpp.o.d"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp" "CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o.d"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/randomize_weight.cpp" "CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o.d"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/section_weight_and_bias.cpp" "CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o.d"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/forget_gate/forget_gate.cpp" "CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o.d"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/input_gate/input_gate.cpp" "CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o.d"
-  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory.cpp" "CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o.d"
-  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory_scaled.cpp" "CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o.d"
-  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_short_term_memory.cpp" "CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o.d"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/lstm_unit.cpp" "CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o.d"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/output_gate/output_gate.cpp" "CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o" "gcc" "CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o.d"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Sigmoid/sigmoid.cpp" "CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o" "gcc" "CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o.d"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Tanh/tanh.cpp" "CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o" "gcc" "CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o.d"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/activation_functions.cpp" "CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o" "gcc" "CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o.d"

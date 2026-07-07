@@ -1,38 +1,64 @@
 #include <iostream>
-#include "forget_gate.h"
+#include "lstm_unit.h"
 
 int main()
 {
-    // Values from the LSTM forward pass document (time step t-1)
-    float x_t_minus_1       = 0.5f;   // input
-    float w_xf              = 0.5f;   // input weight for forget gate
-    float h_t_minus_2       = 0.0f;   // previous short-term memory (hidden state)
-    float w_hf              = 0.4f;   // hidden weight for forget gate
-    float b_f               = 0.1f;   // forget gate bias
+    // Values from your LSTM forward pass document (time step t-1)
+    float x = 0.5f;                    // Current input
+    float h_prev = 0.0f;               // Previous short-term memory (hidden state)
+    float c_prev = 0.0f;               // Previous long-term memory (cell state)
 
-    ForgetGate forget_gate;
+    // Create LSTM object
+    Lstm lstm;
 
-    // Call your function
-    float forget_output = forget_gate.compute_forget_gate
-    (
-        x_t_minus_1,    // input
-        w_xf,           // input_weight
-        h_t_minus_2,    // prev_shrt_trm_mem
-        w_hf,           // prev_shrt_trm_mem_weight
-        b_f             // forget_bias
+    // Set weights using the values from your document
+    // Forget Gate
+    lstm.lstmUnitWeights.set_forget_gate_wxf(0.5f);
+    lstm.lstmUnitWeights.set_forget_gate_whf(0.4f);
+    lstm.lstmUnitWeights.set_forget_gate_bf(0.1f);
+
+    // Input Gate - Scaled Potential Memory
+    lstm.lstmUnitWeights.set_input_scaled_potential_memory_wxf(0.3f);
+    lstm.lstmUnitWeights.set_input_scaled_potential_memory_whf(0.6f);
+    lstm.lstmUnitWeights.set_input_scaled_potential_memory_bf(-0.2f);
+
+    // Input Gate - Potential Memory
+    lstm.lstmUnitWeights.set_input_potential_memory_wxf(0.7f);
+    lstm.lstmUnitWeights.set_input_potential_memory_whf(0.2f);
+    lstm.lstmUnitWeights.set_input_potential_memory_bf(0.3f);
+
+    // Output Gate
+    lstm.lstmUnitWeights.set_output_scaled_potential_memory_wxf(0.4f);
+    lstm.lstmUnitWeights.set_output_scaled_potential_memory_whf(0.5f);
+    lstm.lstmUnitWeights.set_output_scaled_potential_memory_bf(-0.1f);
+
+    // Variables to store results
+    float new_short_term_memory = 0.0f;
+    float new_long_term_memory  = 0.0f;
+
+    // Run the LSTM unit
+    int result = lstm.compute_lstm_unit(
+        x,
+        h_prev,
+        c_prev,
+        new_short_term_memory,
+        new_long_term_memory
     );
 
-    // Calculate the weighted sum manually so we can print it
-    float weighted_sum = (x_t_minus_1 * w_xf) + 
-                         (h_t_minus_2 * w_hf) + 
-                         b_f;
+    // Print results
+    std::cout << "=== LSTM Unit Test (t-1) ===\n";
+    std::cout << "Input (x):                    " << x << "\n";
+    std::cout << "Previous Short-Term Memory:   " << h_prev << "\n";
+    std::cout << "Previous Long-Term Memory:    " << c_prev << "\n\n";
 
-    std::cout << "=== Forget Gate Test (t-1) ===\n";
-    std::cout << "Input (x):                  " << x_t_minus_1 << "\n";
-    std::cout << "Previous Hidden State (h):  " << h_t_minus_2 << "\n";
-    std::cout << "Weighted Sum:               " << weighted_sum << "\n";
-    std::cout << "Forget Gate Output (f):     " << forget_output << "\n";
-    std::cout << "Expected (from document):   ~0.5866\n";
+    std::cout << "New Long-Term Memory:         " << new_long_term_memory << "\n";
+    std::cout << "New Short-Term Memory:        " << new_short_term_memory << "\n";
+    std::cout << "Return code:                  " << result << "\n\n";
+
+    // Expected values from your document
+    std::cout << "=== Expected Values from Document ===\n";
+    std::cout << "Expected New Long-Term Memory:  0.2787\n";
+    std::cout << "Expected New Short-Term Memory: 0.1426\n";
 
     return 0;
 }

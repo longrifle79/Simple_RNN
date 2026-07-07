@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/Activation_fuctions -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Gates -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Gates/forget_gate -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Gates/input_gate -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Gates/output_gate
+CXX_INCLUDES = -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/Activation_fuctions -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Gates -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Gates/LSTM_unit -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Gates/LSTM_unit/forget_gate -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Gates/LSTM_unit/input_gate -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Gates/LSTM_unit/output_gate -I/home/gary/Desktop/Simple_RNN/LSTM_unit/includes/LSTM_Weights
 
 CXX_FLAGS = -g -std=gnu++17
 

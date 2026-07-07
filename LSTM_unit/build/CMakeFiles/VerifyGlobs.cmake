@@ -14,11 +14,13 @@ endif()
 # SRC_FILES at CMakeLists.txt:8 (file)
 file(GLOB_RECURSE NEW_GLOB LIST_DIRECTORIES false "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/*.cpp")
 set(OLD_GLOB
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/randomize_weight.cpp"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/section_weight_and_bias.cpp"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/forget_gate/forget_gate.cpp"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/input_gate/input_gate.cpp"
-  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory.cpp"
-  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory_scaled.cpp"
-  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_short_term_memory.cpp"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/lstm_unit.cpp"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/output_gate/output_gate.cpp"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Sigmoid/sigmoid.cpp"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Tanh/tanh.cpp"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/activation_functions.cpp"

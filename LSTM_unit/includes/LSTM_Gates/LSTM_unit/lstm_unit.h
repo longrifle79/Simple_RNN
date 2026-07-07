@@ -14,19 +14,23 @@
 
 class Lstm
 {
+    public:
+            Forget_Gate forgetGate;
+            Input_Gate inputGate;
+            Output_Gate outputGate;
+            Lstm_Unit_Weights lstmUnitWeights;
     private:
-        Forget_Gate forgetGate;
-        Input_Gate inputGate;
-        Output_Gate outputGate;
-        Lstm_Unit_Weights lstmUnitWeights;
+        // Forget_Gate forgetGate;
+        // Input_Gate inputGate;
+        // Output_Gate outputGate;
+        // Lstm_Unit_Weights lstmUnitWeights;
 
     public:
         Lstm() = default;
 
         int compute_lstm_unit(    float input, 
                                     float short_term_memory, 
-                                    float long_term_memory, 
-                                    Lstm_Unit_Weights lstmUnitWeights,
+                                    float long_term_memory,
                                     float &new_short_term_memory,
                                     float &new_long_term_memory);
 

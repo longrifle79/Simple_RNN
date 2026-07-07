@@ -154,6 +154,78 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+src/LSTM_Weights/lstm_unit_weights_and_bias.o: src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o
+.PHONY : src/LSTM_Weights/lstm_unit_weights_and_bias.o
+
+# target to build an object file
+src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o
+.PHONY : src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o
+
+src/LSTM_Weights/lstm_unit_weights_and_bias.i: src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.i
+.PHONY : src/LSTM_Weights/lstm_unit_weights_and_bias.i
+
+# target to preprocess a source file
+src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.i
+.PHONY : src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.i
+
+src/LSTM_Weights/lstm_unit_weights_and_bias.s: src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.s
+.PHONY : src/LSTM_Weights/lstm_unit_weights_and_bias.s
+
+# target to generate assembly for a file
+src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.s
+.PHONY : src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.s
+
+src/LSTM_Weights/randomize_weight.o: src/LSTM_Weights/randomize_weight.cpp.o
+.PHONY : src/LSTM_Weights/randomize_weight.o
+
+# target to build an object file
+src/LSTM_Weights/randomize_weight.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o
+.PHONY : src/LSTM_Weights/randomize_weight.cpp.o
+
+src/LSTM_Weights/randomize_weight.i: src/LSTM_Weights/randomize_weight.cpp.i
+.PHONY : src/LSTM_Weights/randomize_weight.i
+
+# target to preprocess a source file
+src/LSTM_Weights/randomize_weight.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.i
+.PHONY : src/LSTM_Weights/randomize_weight.cpp.i
+
+src/LSTM_Weights/randomize_weight.s: src/LSTM_Weights/randomize_weight.cpp.s
+.PHONY : src/LSTM_Weights/randomize_weight.s
+
+# target to generate assembly for a file
+src/LSTM_Weights/randomize_weight.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.s
+.PHONY : src/LSTM_Weights/randomize_weight.cpp.s
+
+src/LSTM_Weights/section_weight_and_bias.o: src/LSTM_Weights/section_weight_and_bias.cpp.o
+.PHONY : src/LSTM_Weights/section_weight_and_bias.o
+
+# target to build an object file
+src/LSTM_Weights/section_weight_and_bias.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o
+.PHONY : src/LSTM_Weights/section_weight_and_bias.cpp.o
+
+src/LSTM_Weights/section_weight_and_bias.i: src/LSTM_Weights/section_weight_and_bias.cpp.i
+.PHONY : src/LSTM_Weights/section_weight_and_bias.i
+
+# target to preprocess a source file
+src/LSTM_Weights/section_weight_and_bias.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.i
+.PHONY : src/LSTM_Weights/section_weight_and_bias.cpp.i
+
+src/LSTM_Weights/section_weight_and_bias.s: src/LSTM_Weights/section_weight_and_bias.cpp.s
+.PHONY : src/LSTM_Weights/section_weight_and_bias.s
+
+# target to generate assembly for a file
+src/LSTM_Weights/section_weight_and_bias.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.s
+.PHONY : src/LSTM_Weights/section_weight_and_bias.cpp.s
+
 src/LSTM_gates/forget_gate/forget_gate.o: src/LSTM_gates/forget_gate/forget_gate.cpp.o
 .PHONY : src/LSTM_gates/forget_gate/forget_gate.o
 
@@ -202,77 +274,53 @@ src/LSTM_gates/input_gate/input_gate.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.s
 .PHONY : src/LSTM_gates/input_gate/input_gate.cpp.s
 
-src/LSTM_gates/potential_memory.o: src/LSTM_gates/potential_memory.cpp.o
-.PHONY : src/LSTM_gates/potential_memory.o
+src/LSTM_gates/lstm_unit.o: src/LSTM_gates/lstm_unit.cpp.o
+.PHONY : src/LSTM_gates/lstm_unit.o
 
 # target to build an object file
-src/LSTM_gates/potential_memory.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o
-.PHONY : src/LSTM_gates/potential_memory.cpp.o
+src/LSTM_gates/lstm_unit.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o
+.PHONY : src/LSTM_gates/lstm_unit.cpp.o
 
-src/LSTM_gates/potential_memory.i: src/LSTM_gates/potential_memory.cpp.i
-.PHONY : src/LSTM_gates/potential_memory.i
+src/LSTM_gates/lstm_unit.i: src/LSTM_gates/lstm_unit.cpp.i
+.PHONY : src/LSTM_gates/lstm_unit.i
 
 # target to preprocess a source file
-src/LSTM_gates/potential_memory.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.i
-.PHONY : src/LSTM_gates/potential_memory.cpp.i
+src/LSTM_gates/lstm_unit.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.i
+.PHONY : src/LSTM_gates/lstm_unit.cpp.i
 
-src/LSTM_gates/potential_memory.s: src/LSTM_gates/potential_memory.cpp.s
-.PHONY : src/LSTM_gates/potential_memory.s
+src/LSTM_gates/lstm_unit.s: src/LSTM_gates/lstm_unit.cpp.s
+.PHONY : src/LSTM_gates/lstm_unit.s
 
 # target to generate assembly for a file
-src/LSTM_gates/potential_memory.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.s
-.PHONY : src/LSTM_gates/potential_memory.cpp.s
+src/LSTM_gates/lstm_unit.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.s
+.PHONY : src/LSTM_gates/lstm_unit.cpp.s
 
-src/LSTM_gates/potential_memory_scaled.o: src/LSTM_gates/potential_memory_scaled.cpp.o
-.PHONY : src/LSTM_gates/potential_memory_scaled.o
+src/LSTM_gates/output_gate/output_gate.o: src/LSTM_gates/output_gate/output_gate.cpp.o
+.PHONY : src/LSTM_gates/output_gate/output_gate.o
 
 # target to build an object file
-src/LSTM_gates/potential_memory_scaled.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o
-.PHONY : src/LSTM_gates/potential_memory_scaled.cpp.o
+src/LSTM_gates/output_gate/output_gate.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o
+.PHONY : src/LSTM_gates/output_gate/output_gate.cpp.o
 
-src/LSTM_gates/potential_memory_scaled.i: src/LSTM_gates/potential_memory_scaled.cpp.i
-.PHONY : src/LSTM_gates/potential_memory_scaled.i
-
-# target to preprocess a source file
-src/LSTM_gates/potential_memory_scaled.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.i
-.PHONY : src/LSTM_gates/potential_memory_scaled.cpp.i
-
-src/LSTM_gates/potential_memory_scaled.s: src/LSTM_gates/potential_memory_scaled.cpp.s
-.PHONY : src/LSTM_gates/potential_memory_scaled.s
-
-# target to generate assembly for a file
-src/LSTM_gates/potential_memory_scaled.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.s
-.PHONY : src/LSTM_gates/potential_memory_scaled.cpp.s
-
-src/LSTM_gates/potential_short_term_memory.o: src/LSTM_gates/potential_short_term_memory.cpp.o
-.PHONY : src/LSTM_gates/potential_short_term_memory.o
-
-# target to build an object file
-src/LSTM_gates/potential_short_term_memory.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o
-.PHONY : src/LSTM_gates/potential_short_term_memory.cpp.o
-
-src/LSTM_gates/potential_short_term_memory.i: src/LSTM_gates/potential_short_term_memory.cpp.i
-.PHONY : src/LSTM_gates/potential_short_term_memory.i
+src/LSTM_gates/output_gate/output_gate.i: src/LSTM_gates/output_gate/output_gate.cpp.i
+.PHONY : src/LSTM_gates/output_gate/output_gate.i
 
 # target to preprocess a source file
-src/LSTM_gates/potential_short_term_memory.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.i
-.PHONY : src/LSTM_gates/potential_short_term_memory.cpp.i
+src/LSTM_gates/output_gate/output_gate.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.i
+.PHONY : src/LSTM_gates/output_gate/output_gate.cpp.i
 
-src/LSTM_gates/potential_short_term_memory.s: src/LSTM_gates/potential_short_term_memory.cpp.s
-.PHONY : src/LSTM_gates/potential_short_term_memory.s
+src/LSTM_gates/output_gate/output_gate.s: src/LSTM_gates/output_gate/output_gate.cpp.s
+.PHONY : src/LSTM_gates/output_gate/output_gate.s
 
 # target to generate assembly for a file
-src/LSTM_gates/potential_short_term_memory.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.s
-.PHONY : src/LSTM_gates/potential_short_term_memory.cpp.s
+src/LSTM_gates/output_gate/output_gate.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.s
+.PHONY : src/LSTM_gates/output_gate/output_gate.cpp.s
 
 src/activation_fuctions/Sigmoid/sigmoid.o: src/activation_fuctions/Sigmoid/sigmoid.cpp.o
 .PHONY : src/activation_fuctions/Sigmoid/sigmoid.o
@@ -358,21 +406,27 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... src/LSTM_Weights/lstm_unit_weights_and_bias.o"
+	@echo "... src/LSTM_Weights/lstm_unit_weights_and_bias.i"
+	@echo "... src/LSTM_Weights/lstm_unit_weights_and_bias.s"
+	@echo "... src/LSTM_Weights/randomize_weight.o"
+	@echo "... src/LSTM_Weights/randomize_weight.i"
+	@echo "... src/LSTM_Weights/randomize_weight.s"
+	@echo "... src/LSTM_Weights/section_weight_and_bias.o"
+	@echo "... src/LSTM_Weights/section_weight_and_bias.i"
+	@echo "... src/LSTM_Weights/section_weight_and_bias.s"
 	@echo "... src/LSTM_gates/forget_gate/forget_gate.o"
 	@echo "... src/LSTM_gates/forget_gate/forget_gate.i"
 	@echo "... src/LSTM_gates/forget_gate/forget_gate.s"
 	@echo "... src/LSTM_gates/input_gate/input_gate.o"
 	@echo "... src/LSTM_gates/input_gate/input_gate.i"
 	@echo "... src/LSTM_gates/input_gate/input_gate.s"
-	@echo "... src/LSTM_gates/potential_memory.o"
-	@echo "... src/LSTM_gates/potential_memory.i"
-	@echo "... src/LSTM_gates/potential_memory.s"
-	@echo "... src/LSTM_gates/potential_memory_scaled.o"
-	@echo "... src/LSTM_gates/potential_memory_scaled.i"
-	@echo "... src/LSTM_gates/potential_memory_scaled.s"
-	@echo "... src/LSTM_gates/potential_short_term_memory.o"
-	@echo "... src/LSTM_gates/potential_short_term_memory.i"
-	@echo "... src/LSTM_gates/potential_short_term_memory.s"
+	@echo "... src/LSTM_gates/lstm_unit.o"
+	@echo "... src/LSTM_gates/lstm_unit.i"
+	@echo "... src/LSTM_gates/lstm_unit.s"
+	@echo "... src/LSTM_gates/output_gate/output_gate.o"
+	@echo "... src/LSTM_gates/output_gate/output_gate.i"
+	@echo "... src/LSTM_gates/output_gate/output_gate.s"
 	@echo "... src/activation_fuctions/Sigmoid/sigmoid.o"
 	@echo "... src/activation_fuctions/Sigmoid/sigmoid.i"
 	@echo "... src/activation_fuctions/Sigmoid/sigmoid.s"

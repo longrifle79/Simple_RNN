@@ -5,10 +5,10 @@
 
 
 
-class Lstm_Unit_Weights:section_weight_and_bias
+class Lstm_Unit_Weights : public Section_Weight_And_Bias
 {
     private:
-        std::vector<section_weight_and_bias> LSTM_weights;
+        std::vector<Section_Weight_And_Bias> LSTM_weights;
 
     public:
         Lstm_Unit_Weights();

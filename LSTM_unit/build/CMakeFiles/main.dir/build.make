@@ -83,10 +83,52 @@ CMakeFiles/main.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/main.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/main.cpp -o CMakeFiles/main.dir/main.cpp.s
 
+CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp
+CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o -MF CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp
+
+CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp > CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.i
+
+CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp -o CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.s
+
+CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/randomize_weight.cpp
+CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o -MF CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/randomize_weight.cpp
+
+CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/randomize_weight.cpp > CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.i
+
+CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/randomize_weight.cpp -o CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.s
+
+CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/section_weight_and_bias.cpp
+CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o -MF CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/section_weight_and_bias.cpp
+
+CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/section_weight_and_bias.cpp > CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.i
+
+CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_Weights/section_weight_and_bias.cpp -o CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.s
+
 CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/forget_gate/forget_gate.cpp
 CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o -MF CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/forget_gate/forget_gate.cpp
 
 CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.i: cmake_force
@@ -100,7 +142,7 @@ CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.s: cmake_force
 CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/input_gate/input_gate.cpp
 CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o -MF CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/input_gate/input_gate.cpp
 
 CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.i: cmake_force
@@ -111,52 +153,38 @@ CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/input_gate/input_gate.cpp -o CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.s
 
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o: CMakeFiles/main.dir/flags.make
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory.cpp
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o -MF CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory.cpp
+CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/lstm_unit.cpp
+CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o -MF CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/lstm_unit.cpp
 
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory.cpp > CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.i
+CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/lstm_unit.cpp > CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.i
 
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory.cpp -o CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.s
+CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/lstm_unit.cpp -o CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.s
 
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o: CMakeFiles/main.dir/flags.make
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory_scaled.cpp
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o -MF CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory_scaled.cpp
+CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/output_gate/output_gate.cpp
+CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o -MF CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/output_gate/output_gate.cpp
 
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory_scaled.cpp > CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.i
+CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/output_gate/output_gate.cpp > CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.i
 
-CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_memory_scaled.cpp -o CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.s
-
-CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o: CMakeFiles/main.dir/flags.make
-CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_short_term_memory.cpp
-CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o -MF CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o.d -o CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_short_term_memory.cpp
-
-CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_short_term_memory.cpp > CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.i
-
-CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/potential_short_term_memory.cpp -o CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.s
+CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LSTM_unit/src/LSTM_gates/output_gate/output_gate.cpp -o CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.s
 
 CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Sigmoid/sigmoid.cpp
 CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o -MF CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o.d -o CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Sigmoid/sigmoid.cpp
 
 CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.i: cmake_force
@@ -170,7 +198,7 @@ CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.s: cmake_force
 CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Tanh/tanh.cpp
 CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o -MF CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o.d -o CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Tanh/tanh.cpp
 
 CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.i: cmake_force
@@ -184,7 +212,7 @@ CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.s: cmake_force
 CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o: /home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/activation_functions.cpp
 CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o -MF CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o.d -o CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o -c /home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/activation_functions.cpp
 
 CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.i: cmake_force
@@ -198,11 +226,13 @@ CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.s: cmake_fo
 # Object files for target main
 main_OBJECTS = \
 "CMakeFiles/main.dir/main.cpp.o" \
+"CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o" \
+"CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o" \
+"CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o" \
 "CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o" \
 "CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o" \
-"CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o" \
-"CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o" \
-"CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o" \
+"CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o" \
+"CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o" \
 "CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o" \
 "CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o" \
 "CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o"
@@ -211,17 +241,19 @@ main_OBJECTS = \
 main_EXTERNAL_OBJECTS =
 
 main: CMakeFiles/main.dir/main.cpp.o
+main: CMakeFiles/main.dir/src/LSTM_Weights/lstm_unit_weights_and_bias.cpp.o
+main: CMakeFiles/main.dir/src/LSTM_Weights/randomize_weight.cpp.o
+main: CMakeFiles/main.dir/src/LSTM_Weights/section_weight_and_bias.cpp.o
 main: CMakeFiles/main.dir/src/LSTM_gates/forget_gate/forget_gate.cpp.o
 main: CMakeFiles/main.dir/src/LSTM_gates/input_gate/input_gate.cpp.o
-main: CMakeFiles/main.dir/src/LSTM_gates/potential_memory.cpp.o
-main: CMakeFiles/main.dir/src/LSTM_gates/potential_memory_scaled.cpp.o
-main: CMakeFiles/main.dir/src/LSTM_gates/potential_short_term_memory.cpp.o
+main: CMakeFiles/main.dir/src/LSTM_gates/lstm_unit.cpp.o
+main: CMakeFiles/main.dir/src/LSTM_gates/output_gate/output_gate.cpp.o
 main: CMakeFiles/main.dir/src/activation_fuctions/Sigmoid/sigmoid.cpp.o
 main: CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o
 main: CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o
 main: CMakeFiles/main.dir/build.make
 main: CMakeFiles/main.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/gary/Desktop/Simple_RNN/LSTM_unit/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Linking CXX executable main"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/main.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
