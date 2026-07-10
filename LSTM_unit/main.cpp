@@ -27,7 +27,7 @@ int main()
     lstm.lstmUnitWeights.set_input_potential_memory_whf(0.2f);
     lstm.lstmUnitWeights.set_input_potential_memory_bf(0.3f);
 
-    // Output Gate
+    // Output Gatee
     lstm.lstmUnitWeights.set_output_scaled_potential_memory_wxf(0.4f);
     lstm.lstmUnitWeights.set_output_scaled_potential_memory_whf(0.5f);
     lstm.lstmUnitWeights.set_output_scaled_potential_memory_bf(-0.1f);

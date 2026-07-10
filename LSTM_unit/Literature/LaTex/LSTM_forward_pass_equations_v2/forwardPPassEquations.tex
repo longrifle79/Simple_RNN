@@ -1,0 +1,127 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=0.75in}
+
+% Colors (matching your previous documents)
+\definecolor{headingRed}{RGB}{178, 34, 34}
+\definecolor{labelBlue}{RGB}{0, 102, 204}
+
+\begin{document}
+
+\title{LSTM Backpropagation Derivatives \\ (Fully Expanded Form)}
+\author{Gary Ewing}
+\date{}
+\maketitle
+
+For simplicity and clarity, the following shorthand is used in the derivatives:
+
+\begin{itemize}[leftmargin=*]
+    \item \textcolor{labelBlue}{\textbf{Let}} $\sigma'(z) = \sigma(z) \odot (1 - \sigma(z))$ \quad (sigmoid derivative)
+    \item \textcolor{labelBlue}{\textbf{Let}} $\tanh'(z) = 1 - \tanh^2(z)$ \quad (tanh derivative)
+\end{itemize}
+
+\subsection*{Common Building Blocks (Fully Expanded)}
+
+\textcolor{headingRed}{\textbf{Key intermediate gradients:}}
+
+\begin{align*}
+\frac{\partial h_t}{\partial o_t}   &= \tanh(C_t) \\
+\frac{\partial h_t}{\partial C_t}   &= o_t \odot \bigl(1 - \tanh^2(C_t)\bigr) \\
+\frac{\partial h_t}{\partial f_t}   &= \frac{\partial h_t}{\partial C_t} \odot C_{t-1} \\
+\frac{\partial h_t}{\partial i_t}   &= \frac{\partial h_t}{\partial C_t} \odot \tilde{C}_t \\
+\frac{\partial h_t}{\partial \tilde{C}_t} &= \frac{\partial h_t}{\partial C_t} \odot i_t
+\end{align*}
+
+
+
+
+
+\textcolor{headingRed}{\textbf{Where:}}
+
+\begin{itemize}[leftmargin=*]
+    \item $o_t = \sigma(w_{ho_t} \cdot h_{t-1} + w_{xo_t} \cdot x_t + b_{o_t})$
+    \item $f_t = \sigma(w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t})$
+    \item $i_t = \sigma(w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t})$
+    \item $\tilde{C}_t = \tanh(w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t})$
+    \item $C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t$
+\end{itemize}
+
+
+
+\[
+h_t = \sigma(w_{ho_t} \cdot h_{t-1} + w_{xo_t} \cdot x_t + b_{o_t}) \odot \tanh\bigl( \sigma(w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t}) \odot C_{t-1} \bigr) +
+\]
+\[
+\sigma(w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t}) \odot \tanh(w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t})
+\]
+
+
+\begin{equation}
+C_t = \sigma \bigl( w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t} \bigr) \odot C_{t-1} + \sigma \bigl( w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t} \bigr) \odot \tanh \bigl( w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t} \bigr)
+\end{equation}
+
+
+
+\subsection*{1. Derivatives with respect to Output Gate Parameters}
+
+\begin{align*}
+\frac{\partial h_t}{\partial w_{ho_t}} &= \Bigl( \frac{\partial h_t}{\partial o_t} \odot \sigma'\bigl(w_{ho_t} \cdot h_{t-1} + w_{xo_t} \cdot x_t + b_{o_t}\bigr) \Bigr) \cdot h_{t-1}^\top \\[6pt]
+\frac{\partial h_t}{\partial w_{xo_t}} &= \Bigl( \frac{\partial h_t}{\partial o_t} \odot \sigma'\bigl(w_{ho_t} \cdot h_{t-1} + w_{xo_t} \cdot x_t + b_{o_t}\bigr) \Bigr) \cdot x_t^\top \\[6pt]
+\frac{\partial h_t}{\partial b_{o_t}}  &= \frac{\partial h_t}{\partial o_t} \odot \sigma'\bigl(w_{ho_t} \cdot h_{t-1} + w_{xo_t} \cdot x_t + b_{o_t}\bigr)
+\end{align*}
+
+\subsection*{2. Derivatives with respect to Forget Gate Parameters}
+
+\begin{align*}
+\frac{\partial h_t}{\partial w_{hf_t}} &= \Bigl( \frac{\partial h_t}{\partial f_t} \odot \sigma'\bigl(w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t}\bigr) \Bigr) \cdot h_{t-1}^\top \\[6pt]
+\frac{\partial h_t}{\partial w_{xf_t}} &= \Bigl( \frac{\partial h_t}{\partial f_t} \odot \sigma'\bigl(w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t}\bigr) \Bigr) \cdot x_t^\top \\[6pt]
+\frac{\partial h_t}{\partial b_{f_t}}  &= \frac{\partial h_t}{\partial f_t} \odot \sigma'\bigl(w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t}\bigr)
+\end{align*}
+
+\subsection*{3. Derivatives with respect to Input Gate Sigmoid Parameters}
+
+\begin{align*}
+\frac{\partial h_t}{\partial w_{hi1_t}} &= \Bigl( \frac{\partial h_t}{\partial i_t} \odot \sigma'\bigl(w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t}\bigr) \Bigr) \cdot h_{t-1}^\top \\[6pt]
+\frac{\partial h_t}{\partial w_{xi1_t}} &= \Bigl( \frac{\partial h_t}{\partial i_t} \odot \sigma'\bigl(w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t}\bigr) \Bigr) \cdot x_t^\top \\[6pt]
+\frac{\partial h_t}{\partial b_{i1_t}}  &= \frac{\partial h_t}{\partial i_t} \odot \sigma'\bigl(w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t}\bigr)
+\end{align*}
+
+\subsection*{4. Derivatives with respect to Candidate Parameters}
+
+\begin{align*}
+\frac{\partial h_t}{\partial w_{hi2_t}} &= \Bigl( \frac{\partial h_t}{\partial \tilde{C}_t} \odot \bigl(1 - \tanh^2(w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t})\bigr) \Bigr) \cdot h_{t-1}^\top \\[6pt]
+\frac{\partial h_t}{\partial w_{xi2_t}} &= \Bigl( \frac{\partial h_t}{\partial \tilde{C}_t} \odot \bigl(1 - \tanh^2(w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t})\bigr) \Bigr) \cdot x_t^\top \\[6pt]
+\frac{\partial h_t}{\partial b_{i2_t}}  &= \frac{\partial h_t}{\partial \tilde{C}_t} \odot \bigl(1 - \tanh^2(w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t})\bigr)
+\end{align*}
+
+\subsection*{5. Derivatives with respect to Previous States and Input}
+
+\begin{align*}
+\frac{\partial h_t}{\partial h_{t-1}} &=
+\left( \frac{\partial h_t}{\partial o_t} \odot \sigma'\bigl(w_{ho_t} \cdot h_{t-1} + w_{xo_t} \cdot x_t + b_{o_t}\bigr) \right) \cdot w_{ho_t} \nonumber \\
+&+ \left( \frac{\partial h_t}{\partial f_t} \odot \sigma'\bigl(w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t}\bigr) \right) \cdot w_{hf_t} \nonumber \\
+&+ \left( \frac{\partial h_t}{\partial i_t} \odot \sigma'\bigl(w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t}\bigr) \right) \cdot w_{hi1_t} \nonumber \\
+&+ \left( \frac{\partial h_t}{\partial \tilde{C}_t} \odot \bigl(1 - \tanh^2(w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t})\bigr) \right) \cdot w_{hi2_t}
+\end{align*}
+
+\begin{align*}
+\frac{\partial h_t}{\partial C_{t-1}} &= \frac{\partial h_t}{\partial C_t} \odot f_t \\
+&= o_t \odot \bigl(1 - \tanh^2(C_t)\bigr) \odot \sigma\bigl(w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t}\bigr)
+\end{align*}
+
+\begin{align*}
+\frac{\partial h_t}{\partial x_t} &=
+\left( \frac{\partial h_t}{\partial o_t} \odot \sigma'\bigl(w_{ho_t} \cdot h_{t-1} + w_{xo_t} \cdot x_t + b_{o_t}\bigr) \right) \cdot w_{xo_t} \nonumber \\
+&+ \left( \frac{\partial h_t}{\partial f_t} \odot \sigma'\bigl(w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t}\bigr) \right) \cdot w_{xf_t} \nonumber \\
+&+ \left( \frac{\partial h_t}{\partial i_t} \odot \sigma'\bigl(w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t}\bigr) \right) \cdot w_{xi1_t} \nonumber \\
+&+ \left( \frac{\partial h_t}{\partial \tilde{C}_t} \odot \bigl(1 - \tanh^2(w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t})\bigr) \right) \cdot w_{xi2_t}
+\end{align*}
+
+These are all the derivatives with respect to every variable appearing in the expanded equation for $h_t$.
+
+\end{document}

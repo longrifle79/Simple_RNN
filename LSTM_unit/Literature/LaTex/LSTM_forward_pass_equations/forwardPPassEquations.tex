@@ -1,0 +1,87 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}          % <-- Added this line (fixes \resizebox error)
+
+\geometry{margin=1in}
+
+\begin{document}
+
+\title{LSTM Gate Equations}
+\author{}
+\date{}
+\maketitle
+
+\section*{LSTM Equations}
+
+% ==================== Reference Table ====================
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Symbol}              & \textbf{Meaning} \\
+\midrule
+\( f_t, i_t, o_t \)          & Forget, Input, Output gates \\
+\( \tilde{C}_t \)            & Candidate cell state \\
+\( C_t, h_t \)               & New cell state and hidden state \\
+\( W_\bullet, b_\bullet \)   & Weights and biases for each gate \\
+\( \odot \)                  & Element-wise (Hadamard) product \\
+\( [h_{t-1}, x_t] \)         & Concatenation of previous hidden state and current input \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ==================== Expanded Form (per weight) ====================
+
+\begin{align}
+% === Forget Gate ===
+\text{Forget Gate} \to f_t &= \sigma \bigl( w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t} \bigr) \label{eq:forget} \\[4pt]
+% === Input Gate ===
+\text{Input Gate} \to i_t &= \sigma \bigl( w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t} \bigr) \label{eq:input} \\
+\text{Candidate Cell State} \to \tilde{C}_t &= \tanh \bigl( w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t} \bigr) \label{eq:candidate} \\[4pt]
+% === Output Gate ===
+\text{Output Gate} \to o_t &= \sigma \bigl( w_{ho_t} \cdot h_{t-1} + w_{xo_t} \cdot x_t + b_{o_t} \bigr) \label{eq:output} \\[8pt]
+% === Cell State & Hidden State Update ===
+\text{New Long-Term Memory} \to C_t &= f_t \odot C_{t-1} + i_t \odot \tilde{C}_t \label{eq:cell} \\
+\text{New Short-Term Memory} \to h_t &= o_t \odot \tanh(C_t) \label{eq:hidden}
+\end{align}
+
+
+
+
+
+
+\[
+h_t = \sigma(w_{ho_t} \cdot h_{t-1} + w_{xo_t} \cdot x_t + b_{o_t}) \odot \tanh\bigl( \sigma(w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t}) \odot C_{t-1} \bigr) +
+\]
+\[
+\sigma(w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t}) \odot \tanh(w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t})
+\]
+
+\begin{equation}
+C_t = \sigma \bigl( w_{hf_t} \cdot h_{t-1} + w_{xf_t} \cdot x_t + b_{f_t} \bigr) \odot C_{t-1} + \sigma \bigl( w_{hi1_t} \cdot h_{t-1} + w_{xi1_t} \cdot x_t + b_{i1_t} \bigr) \odot \tanh \bigl( w_{hi2_t} \cdot h_{t-1} + w_{xi2_t} \cdot x_t + b_{i2_t} \bigr)
+\end{equation}
+
+
+\begin{align}
+h_{t-1} &= \sigma \bigl( w_{ho_{t-1}} \cdot h_{t-2} + w_{xo_{t-1}} \cdot x_{t-1} + b_{o_{t-1}} \bigr) \nonumber \\
+        &\quad \odot \tanh \Bigg(
+            \sigma \bigl( w_{hf_{t-1}} \cdot h_{t-2} + w_{xf_{t-1}} \cdot x_{t-1} + b_{f_{t-1}} \bigr) \odot C_{t-2} \nonumber \\
+            &\quad + \sigma \bigl( w_{hi1_{t-1}} \cdot h_{t-2} + w_{xi1_{t-1}} \cdot x_{t-1} + b_{i1_{t-1}} \bigr) \nonumber \\
+            &\quad \odot \tanh \bigl( w_{hi2_{t-1}} \cdot h_{t-2} + w_{xi2_{t-1}} \cdot x_{t-1} + b_{i2_{t-1}} \bigr)
+        \Bigg)
+\end{align}
+
+
+
+\begin{align}
+C_{t-1} &= \sigma \bigl( w_{hf_{t-1}} \cdot h_{t-2} + w_{xf_{t-1}} \cdot x_{t-1} + b_{f_{t-1}} \bigr) \odot C_{t-2} \nonumber \\
+        &+ \sigma \bigl( w_{hi1_{t-1}} \cdot h_{t-2} + w_{xi1_{t-1}} \cdot x_{t-1} + b_{i1_{t-1}} \bigr) \nonumber \\
+        &\quad \odot \tanh \bigl( w_{hi2_{t-1}} \cdot h_{t-2} + w_{xi2_{t-1}} \cdot x_{t-1} + b_{i2_{t-1}} \bigr)
+\end{align}
+
+
+
+
+\end{document}

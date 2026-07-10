@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discovering LSTM at the Table — Building Intuition Gate by Gate</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --paper: #faf8f3;
+  --text: #1f1a14;
+  --accent: #8B5E3C;
+  --light: #EDE4D9;
+  --border: #d4ccc0;
+  --success: #2e7d32;
+  --fail: #c0392b;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--paper); color: var(--text); line-height: 1.7; }
+h1 { font-size: 28px; font-weight: 700; color: #3f2a1d; }
+h2 { font-size: 22px; font-weight: 700; color: #3f2a1d; margin-top: 42px; border-bottom: 3px solid var(--light); padding-bottom: 8px; }
+h3 { font-size: 18px; font-weight: 700; color: var(--accent); margin-top: 28px; }
+h4 { font-size: 16px; font-weight: 600; color: #5c4630; margin-top: 20px; }
+.section { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+.card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 22px 26px; margin: 18px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+.eq { background: #f8f4ed; border: 1px solid var(--border); border-radius: 10px; padding: 16px 22px; margin: 14px 0; overflow-x: auto; font-size: 15px; }
+.diag { background: #faf8f3; border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin: 16px 0; }
+.note { background: #eef4fb; border-left: 5px solid #4a7fba; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+.analogy { background: #f9f5eb; border-left: 5px solid #d4a017; padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-style: italic; }
+.res { background: #e8f0e3; border-left: 5px solid #2e7d32; padding: 13px 17px; margin: 14px 0; border-radius: 0 8px 8px 0; }
+.fail { background: #fdecea; border-left: 5px solid #c0392b; padding: 13px 17px; margin: 14px 0; border-radius: 0 8px 8px 0; }
+.step { background: linear-gradient(to right, #7b2d8b, #9b4d9b); color: white; padding: 8px 18px; border-radius: 9999px; font-weight: 600; display: inline-block; margin-bottom: 10px; }
+svg text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tbl th, .tbl td { padding: 9px 12px; border: 1px solid var(--border); text-align: center; }
+.tbl th { background: #3f2a1d; color: white; }
+</style>
+</head>
+<body class="bg-[#faf8f3]">
+
+<div class="max-w-[1100px] mx-auto px-6 pt-10 pb-20">
+
+<!-- HERO -->
+<div class="text-center mb-10">
+  <div class="inline-flex items-center gap-2 bg-white border border-[#d4ccc0] rounded-full px-4 py-1 text-sm mb-4">
+    <span class="w-2 h-2 bg-[#8B5E3C] rounded-full animate-pulse"></span>
+    <span class="font-medium text-[#5c4630]">A collaborative journey at the table</span>
+  </div>
+  <h1 class="text-4xl tracking-tight">How We Invented LSTM<br>at the Kitchen Table</h1>
+  <p class="mt-3 text-xl text-[#5c4630] max-w-2xl mx-auto">A step-by-step story of the questions we asked, the simple ideas we tried, why they failed, and how each failure forced us to invent the next piece of the solution — all while staring at a single time series chart.</p>
+  <p class="mt-2 text-sm text-[#7a7060]">Weight &amp; bias names match the companion back-propagation document you attached.</p>
+</div>
+
+<!-- TABLE SCENE -->
+<div class="card mb-10">
+  <h2 class="text-center">The Scene</h2>
+  <div class="flex flex-col md:flex-row gap-8 items-center">
+    <div class="flex-1">
+      <p class="text-[15px]">Imagine we are sitting at a sturdy wooden table in a quiet room with good light. On the table is a large printed line chart showing a time series. We have markers, a small whiteboard, coffee, and a notebook. Our goal is simple but stubborn:</p>
+      <div class="my-4 p-4 bg-[#f5f1e9] rounded-xl border border-[#d4ccc0]">
+        <p class="font-semibold text-center">"Predict the next value on this chart as accurately as possible."</p>
+      </div>
+      <p class="text-sm text-[#5c4630]">We will proceed exactly as curious people would: ask naive questions, try the simplest possible ideas, watch them fail in specific and revealing ways, and let each failure tell us what the next component must do.</p>
+    </div>
+    <div class="flex-1">
+      <svg viewBox="0 0 420 220" class="w-full max-w-[420px] mx-auto" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="140" width="380" height="12" rx="3" fill="#8B5E3C"/>
+        <rect x="40" y="80" width="340" height="70" rx="4" fill="#f5f1e9" stroke="#d4ccc0" stroke-width="2"/>
+        <!-- chart lines -->
+        <polyline points="60,125 100,118 140,105 180,112 220,95 260,88 300,102 340,78" fill="none" stroke="#c0392b" stroke-width="2.5"/>
+        <polyline points="60,125 100,118 140,105 180,112 220,95 260,88 300,102 340,78" fill="none" stroke="#1f5f8b" stroke-width="1.5" stroke-dasharray="3,2"/>
+        <!-- people -->
+        <circle cx="90" cy="55" r="14" fill="#EDE4D9" stroke="#8B5E3C" stroke-width="2"/>
+        <circle cx="330" cy="55" r="14" fill="#EDE4D9" stroke="#8B5E3C" stroke-width="2"/>
+        <text x="90" y="59" text-anchor="middle" font-size="11" fill="#3f2a1d">You</text>
+        <text x="330" y="59" text-anchor="middle" font-size="11" fill="#3f2a1d">Guide</text>
+        <!-- coffee cups -->
+        <rect x="130" y="95" width="18" height="14" rx="2" fill="#3f2a1d"/>
+        <rect x="272" y="95" width="18" height="14" rx="2" fill="#3f2a1d"/>
+      </svg>
+      <p class="text-center text-xs text-[#7a7060] mt-1">We have a time series chart and a shared desire to understand <em>why</em> each piece is needed.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 1: THE PROBLEM -->
+<div class="section">
+<h2>1. The Problem &amp; The First Questions We Asked</h2>
+
+<div class="card">
+  <p>We start with a concrete time series. Here is the chart we are looking at (synthetic but realistic — it contains a gentle trend, seasonality, and a clear regime shift around step 45 so we can see what happens when the world changes):</p>
+  
+  <canvas id="tsChart" class="w-full max-w-[820px] mx-auto my-6" height="260"></canvas>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+    <div>
+      <p class="font-semibold mb-1">The task:</p>
+      <p>Given the values up to time \( t \), predict the value at \( t+1 \).</p>
+    </div>
+    <div>
+      <p class="font-semibold mb-1">The first questions we wrote on the whiteboard:</p>
+      <ul class="list-disc pl-5 space-y-1 text-[14.5px]">
+        <li>Does the future depend on the past at all?</li>
+        <li>If yes — how much of the past? All of it, or only the recent few steps?</li>
+        <li>What if the underlying process changed partway through (new policy, competitor, sensor drift)?</li>
+        <li>How do we even <em>represent</em> "memory" of the past inside a prediction system?</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2: LONG-TERM ONLY -->
+<h2>2. Attempt #1 — Using Only Long-Term Memory</h2>
+
+<div class="card">
+  <div class="step">Attempt #1</div>
+  <p class="font-medium">Someone at the table says: "Let's just use <em>everything</em> we've seen so far. The long-term average should be stable and reliable."</p>
+  
+  <h4>What it looks like mathematically</h4>
+  <div class="eq">
+    \[ \hat{x}_{t+1} = \frac{1}{t} \sum_{i=1}^{t} x_i \qquad \text{(cumulative mean)} \]
+  </div>
+  <p class="text-sm">Or an exponentially-weighted version that still gives significant weight to the entire history.</p>
+
+  <h4>Why it fails (shown on our chart)</h4>
+  <div class="fail">
+    <p><strong>After the regime shift (around step 45), the predictor is still heavily dragged down by all the old low values.</strong> It takes dozens of steps to "catch up". The prediction systematically lags behind reality whenever the series is non-stationary.</p>
+  </div>
+
+  <div class="analogy">
+    <strong>Analogy:</strong> Trying to steer a ship using only the average position of every port you have ever visited in your entire life. When you sail into a completely new ocean, you are still averaging in the old harbors from decades ago.
+  </div>
+
+  <h4>Diagram — The Long-Term Memory "Bucket"</h4>
+  <svg viewBox="0 0 620 180" class="diag w-full max-w-[620px] mx-auto" xmlns="http://www.w3.org/2000/svg">
+    <rect x="30" y="30" width="560" height="120" rx="12" fill="#f5f1e9" stroke="#d4ccc0" stroke-width="2"/>
+    <!-- bucket -->
+    <rect x="80" y="55" width="140" height="75" rx="8" fill="#EDE4D9" stroke="#8B5E3C" stroke-width="2.5"/>
+    <text x="150" y="78" text-anchor="middle" font-size="13" fill="#3f2a1d" font-weight="600">Long-term</text>
+    <text x="150" y="95" text-anchor="middle" font-size="13" fill="#3f2a1d" font-weight="600">Memory Bucket</text>
+    <!-- drops -->
+    <circle cx="120" cy="45" r="5" fill="#c0392b"/><circle cx="145" cy="42" r="4.5" fill="#c0392b"/><circle cx="170" cy="46" r="5.5" fill="#c0392b"/>
+    <text x="150" y="145" text-anchor="middle" font-size="12" fill="#5c4630">Every past value is poured in and never removed</text>
+    <!-- arrow out -->
+    <line x1="230" y1="92" x2="290" y2="92" stroke="#8B5E3C" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <text x="260" y="82" text-anchor="middle" font-size="12" fill="#8B5E3C" font-weight="600">Average</text>
+    <!-- prediction -->
+    <rect x="310" y="60" width="120" height="55" rx="8" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+    <text x="370" y="82" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="700">Prediction</text>
+    <text x="370" y="100" text-anchor="middle" font-size="11" fill="#922b21">lags badly after shift</text>
+    <!-- old values label -->
+    <text x="150" y="115" text-anchor="middle" font-size="10" fill="#7a7060">Old low values still inside</text>
+  </svg>
+  <p class="text-center text-xs text-[#7a7060] -mt-1 mb-4">No mechanism exists to forget what is no longer true.</p>
+
+  <div class="res">
+    <strong>Key insight we wrote on the whiteboard:</strong><br>
+    Long-term memory alone is too rigid. It cannot forget what is no longer true. We need a way to <em>selectively discard</em> old information.
+  </div>
+</div>
+
+<!-- SECTION 3: SHORT-TERM ONLY -->
+<h2>3. Attempt #2 — Using Only Short-Term Memory</h2>
+
+<div class="card">
+  <div class="step">Attempt #2</div>
+  <p class="font-medium">"Okay, the long-term average is too slow to adapt. Let's only look at the most recent few points. Yesterday and the day before should be most relevant."</p>
+
+  <h4>What it looks like</h4>
+  <div class="eq">
+    \[ \hat{x}_{t+1} = x_t \qquad \text{(last value)} \quad \text{or} \quad \frac{1}{N}\sum_{i=0}^{N-1} x_{t-i} \quad (N=3\text{–}5) \]
+  </div>
+
+  <div class="fail">
+    <p><strong>It completely forgets any pattern that occurred more than N steps ago.</strong> If the series has long-range dependencies (seasonality, slow cycles, or an important event from 30 steps ago that still matters), short-term memory is blind to it. On our chart it zig-zags with noise and misses the bigger structure.</p>
+  </div>
+
+  <div class="analogy">
+    <strong>Analogy:</strong> Having the memory of a goldfish. You remember the last few seconds perfectly, but you have no idea why you swam into this part of the tank or what the seasonal current patterns are.
+  </div>
+
+  <h4>Diagram — The Short-Term Window That Falls Off the Edge</h4>
+  <svg viewBox="0 0 620 160" class="diag w-full max-w-[620px] mx-auto" xmlns="http://www.w3.org/2000/svg">
+    <rect x="30" y="20" width="560" height="120" rx="12" fill="#f5f1e9" stroke="#d4ccc0" stroke-width="2"/>
+    <rect x="70" y="45" width="200" height="55" rx="6" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2"/>
+    <text x="170" y="68" text-anchor="middle" font-size="13" fill="#1f5f8b" font-weight="600">Short-term window (last 5)</text>
+    <text x="170" y="85" text-anchor="middle" font-size="11" fill="#1f5f8b">x_{t-4} … x_t</text>
+    <!-- falling off -->
+    <text x="300" y="78" text-anchor="middle" font-size="11" fill="#c0392b">falls off → forgotten forever</text>
+    <line x1="280" y1="72" x2="320" y2="95" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="2,2"/>
+    <rect x="360" y="45" width="180" height="55" rx="6" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+    <text x="450" y="68" text-anchor="middle" font-size="13" fill="#c0392b" font-weight="600">Prediction only sees recent noise</text>
+    <text x="450" y="85" text-anchor="middle" font-size="11" fill="#922b21">Misses long cycles &amp; past events</text>
+  </svg>
+
+  <div class="res">
+    <strong>Key insight on the whiteboard:</strong><br>
+    Short-term memory alone is too forgetful. It throws away the long-term structure we need. We need a way to <em>preserve</em> important information across many time steps.
+  </div>
+</div>
+
+<!-- SECTION 4: THE REALIZATION -->
+<h2>4. The Realization — We Need Both, But With Control</h2>
+
+<div class="card">
+  <p class="font-medium">At this point someone at the table says:</p>
+  <div class="p-4 bg-white border border-[#d4ccc0] rounded-xl my-3">
+    "We need the stability and long-range information of long-term memory <strong>AND</strong> the quick adaptability of short-term memory. But if we just add them or concatenate, the old information pollutes the new, and the new information can overwrite important old patterns."
+  </div>
+
+  <h4>The new questions that naturally arise</h4>
+  <ul class="list-disc pl-6 space-y-[6px] text-[15px]">
+    <li>What if the memory could <em>mostly stay the same</em> (long-term preservation) but we could <em>choose</em> to add a little new information or <em>choose</em> to forget some old information at each step?</li>
+    <li>Who or what decides what is worth remembering and what should be forgotten?</li>
+    <li>How do we make that decision using only the information available right now (current input + what we currently remember)?</li>
+  </ul>
+
+  <div class="note mt-4">
+    This is the pivotal moment. We realize we need a <strong>memory cell</strong> whose content persists across time with almost no change (the "constant error carousel"), but is protected and updated by learned <strong>gates</strong> that act like valves.
+  </div>
+</div>
+
+<!-- SECTION 5: BUILDING LSTM -->
+<h2>5. Building the LSTM Cell — One Component at a Time</h2>
+
+<div class="card">
+  <p>We start with the idea of a <strong>memory cell</strong> that runs through time like a conveyor belt or highway. Information can stay on the belt for a long time with almost no distortion. At each time step we can open small "valves" (gates) to add new cargo or remove old cargo.</p>
+
+  <h3>The Cell State Highway (the key intuition)</h3>
+  <svg viewBox="0 0 780 140" class="diag w-full max-w-[780px] mx-auto my-4" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 2 L9 5 L1 8" fill="none" stroke="#1f5f8b" stroke-width="2" stroke-linecap="round"/></marker>
+    </defs>
+    <!-- highway -->
+    <rect x="40" y="45" width="700" height="50" rx="8" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2.5"/>
+    <text x="390" y="72" text-anchor="middle" font-size="15" fill="#1f5f8b" font-weight="700">Cell State Highway  c_t   (runs almost unchanged through time)</text>
+    <!-- arrows showing persistence -->
+    <line x1="60" y1="70" x2="720" y2="70" stroke="#1f5f8b" stroke-width="2" marker-end="url(#arr)"/>
+    <!-- gates as valves -->
+    <rect x="160" y="30" width="70" height="28" rx="5" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+    <text x="195" y="48" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="700">Forget</text>
+    <rect x="320" y="30" width="70" height="28" rx="5" fill="#d5f5e3" stroke="#2e7d32" stroke-width="2"/>
+    <text x="355" y="48" text-anchor="middle" font-size="12" fill="#2e7d32" font-weight="700">Input</text>
+    <rect x="480" y="30" width="70" height="28" rx="5" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2"/>
+    <text x="515" y="48" text-anchor="middle" font-size="12" fill="#1f5f8b" font-weight="700">Output</text>
+    <text x="390" y="115" text-anchor="middle" font-size="12" fill="#5c4630">The cell state can preserve information for hundreds of steps because updates are mostly additive.</text>
+  </svg>
+
+  <h3>5.1 The Forget Gate — Why we need it</h3>
+  <p class="text-sm">We need a way to <strong>discard</strong> information from the cell state that is no longer relevant (the old regime before the shift in our chart).</p>
+  
+  <div class="analogy">
+    <strong>Analogy:</strong> A meticulous librarian who periodically reviews the filing cabinet and throws away documents that are no longer useful, but only after checking the current context (the new input and what we currently remember).
+  </div>
+
+  <div class="eq">
+    \[ \text{net}_{f,t} = w_{xf} x_t + w_{hf} h_{t-1} + b_f \]<br>
+    \[ f_t = \sigma(\text{net}_{f,t}) \quad \text{(values between 0 and 1)} \]
+  </div>
+  <p class="text-sm">The previous cell state is multiplied element-wise by \( f_t \). When \( f_t \approx 0 \), old information is forgotten; when \( f_t \approx 1 \), it is preserved.</p>
+
+  <div class="res">
+    <strong>Why we needed the forget gate:</strong> Without it, the cell state would keep accumulating old information forever — exactly the long-term memory problem we saw earlier.
+  </div>
+
+  <h3>5.2 The Input Gate + Candidate — Why we need them</h3>
+  <p class="text-sm">We also need a way to <strong>add</strong> new, relevant information into the cell state without letting in every noisy fluctuation.</p>
+  
+  <div class="eq">
+    \[ \text{net}_{i,t} = w_{xi} x_t + w_{hi} h_{t-1} + b_i \]<br>
+    \[ i_t = \sigma(\text{net}_{i,t}) \]<br><br>
+    \[ \text{net}_{g,t} = w_{xg} x_t + w_{hg} h_{t-1} + b_g \]<br>
+    \[ g_t = \tanh(\text{net}_{g,t}) \quad \text{(candidate values)} \]
+  </div>
+  
+  <div class="eq">
+    Cell update:<br>
+    \[ c_t = f_t \odot c_{t-1} + i_t \odot g_t \]
+  </div>
+
+  <div class="analogy">
+    <strong>Analogy:</strong> The same librarian deciding which new memos are important enough to file, and in what summarized form.
+  </div>
+
+  <div class="res">
+    <strong>Why we needed the input gate + candidate:</strong> Pure long-term memory could not incorporate new signals quickly; pure short-term memory had nothing stable to build upon.
+  </div>
+
+  <h3>5.3 The Output Gate — Why we need it</h3>
+  <p class="text-sm">Even if the cell state contains perfect long-term + short-term information, we may not want to output <em>all</em> of it for the current prediction. Some information might be relevant for future steps but not right now.</p>
+  
+  <div class="eq">
+    \[ \text{net}_{o,t} = w_{xo} x_t + w_{ho} h_{t-1} + b_o \]<br>
+    \[ o_t = \sigma(\text{net}_{o,t}) \]<br><br>
+    \[ h_t = o_t \odot \tanh(c_t) \]
+  </div>
+
+  <div class="analogy">
+    <strong>Analogy:</strong> The librarian preparing a summary report for the boss — they do not dump the entire filing cabinet; they select only what is relevant for <em>this</em> decision.
+  </div>
+
+  <div class="res">
+    <strong>Why we needed the output gate:</strong> It filters what is useful for the current prediction while keeping other information protected inside the cell for later use.
+  </div>
+</div>
+
+<!-- FULL LSTM CELL DIAGRAM -->
+<h2>6. The Complete LSTM Cell (with naming from your backprop document)</h2>
+
+<div class="card">
+  <p class="text-sm mb-3">Here is the full cell with every gate labeled using the exact weight-naming convention from the back-propagation document you attached (\( w_{xo} \), \( w_{ho} \), \( b_o \), etc.). The output gate path is highlighted because that is the single-weight example we will walk through in detail.</p>
+
+  <svg viewBox="0 0 860 420" class="diag w-full max-w-[860px] mx-auto" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 2 L9 5 L1 8" fill="none" stroke="#7b2d8b" stroke-width="2"/></marker>
+      <marker id="arr-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 2 L9 5 L1 8" fill="none" stroke="#c0392b" stroke-width="2"/></marker>
+    </defs>
+    <!-- background -->
+    <rect x="10" y="10" width="840" height="400" rx="14" fill="#faf8f3" stroke="#d4ccc0" stroke-width="2"/>
+    
+    <!-- Cell state highway -->
+    <rect x="80" y="180" width="700" height="38" rx="6" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2.5"/>
+    <text x="430" y="205" text-anchor="middle" font-size="14" fill="#1f5f8b" font-weight="700">Cell State  c_t   (highway — mostly unchanged)</text>
+    
+    <!-- Forget gate -->
+    <rect x="120" y="80" width="95" height="55" rx="8" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+    <text x="167" y="102" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="700">Forget Gate</text>
+    <text x="167" y="118" text-anchor="middle" font-size="10" fill="#922b21">f_t = σ(net_f)</text>
+    <text x="167" y="132" text-anchor="middle" font-size="9" fill="#7a7060">w_xf , w_hf , b_f</text>
+    <!-- arrow from forget to cell -->
+    <line x1="167" y1="135" x2="167" y2="178" stroke="#c0392b" stroke-width="2" marker-end="url(#arr-r)"/>
+    
+    <!-- Input gate + candidate -->
+    <rect x="280" y="80" width="95" height="55" rx="8" fill="#d5f5e3" stroke="#2e7d32" stroke-width="2"/>
+    <text x="327" y="102" text-anchor="middle" font-size="12" fill="#2e7d32" font-weight="700">Input Gate</text>
+    <text x="327" y="118" text-anchor="middle" font-size="10" fill="#1e8449">i_t = σ(net_i)</text>
+    <text x="327" y="132" text-anchor="middle" font-size="9" fill="#7a7060">w_xi , w_hi , b_i</text>
+    
+    <rect x="400" y="80" width="95" height="55" rx="8" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+    <text x="447" y="102" text-anchor="middle" font-size="12" fill="#b45309" font-weight="700">Candidate</text>
+    <text x="447" y="118" text-anchor="middle" font-size="10" fill="#92400e">g_t = tanh(net_g)</text>
+    <text x="447" y="132" text-anchor="middle" font-size="9" fill="#7a7060">w_xg , w_hg , b_g</text>
+    
+    <!-- arrows to cell update -->
+    <line x1="327" y1="135" x2="327" y2="178" stroke="#2e7d32" stroke-width="2" marker-end="url(#arr-p)"/>
+    <line x1="447" y1="135" x2="447" y2="178" stroke="#b45309" stroke-width="2" marker-end="url(#arr-p)"/>
+    
+    <!-- Output gate (highlighted) -->
+    <rect x="560" y="80" width="95" height="55" rx="8" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="3"/>
+    <text x="607" y="102" text-anchor="middle" font-size="12" fill="#1f5f8b" font-weight="700">Output Gate</text>
+    <text x="607" y="118" text-anchor="middle" font-size="10" fill="#1f5f8b">o_t = σ(net_o)</text>
+    <text x="607" y="132" text-anchor="middle" font-size="9" fill="#1f5f8b">w_xo , w_ho , b_o</text>
+    <line x1="607" y1="135" x2="607" y2="178" stroke="#1f5f8b" stroke-width="2.5" marker-end="url(#arr-p)"/>
+    
+    <!-- h_t output -->
+    <rect x="700" y="240" width="110" height="50" rx="8" fill="#fce8f0" stroke="#c2185b" stroke-width="2"/>
+    <text x="755" y="262" text-anchor="middle" font-size="13" fill="#c2185b" font-weight="700">h_t</text>
+    <text x="755" y="278" text-anchor="middle" font-size="10" fill="#922b21">= o_t ⊙ tanh(c_t)</text>
+    
+    <!-- x_t and h_{t-1} inputs -->
+    <rect x="30" y="240" width="70" height="45" rx="6" fill="#eafaf1" stroke="#1e8449" stroke-width="1.5"/>
+    <text x="65" y="260" text-anchor="middle" font-size="11" fill="#1e8449" font-weight="600">x_t</text>
+    <text x="65" y="275" text-anchor="middle" font-size="9" fill="#1e8449">(current input)</text>
+    
+    <rect x="30" y="300" width="70" height="45" rx="6" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>
+    <text x="65" y="320" text-anchor="middle" font-size="11" fill="#b45309" font-weight="600">h_{t-1}</text>
+    <text x="65" y="335" text-anchor="middle" font-size="9" fill="#b45309">(prev hidden)</text>
+    
+    <!-- lines from inputs to gates -->
+    <line x1="100" y1="262" x2="120" y2="108" stroke="#7a7060" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="100" y1="322" x2="120" y2="108" stroke="#7a7060" stroke-width="1" stroke-dasharray="2,2"/>
+    
+    <!-- legend -->
+    <rect x="560" y="320" width="260" height="85" rx="8" fill="white" stroke="#d4ccc0" stroke-width="1"/>
+    <text x="690" y="338" text-anchor="middle" font-size="11" fill="#3f2a1d" font-weight="600">Weight naming (matches your backprop doc)</text>
+    <text x="580" y="355" font-size="10" fill="#1f1a14">w_xo = input → output gate</text>
+    <text x="580" y="370" font-size="10" fill="#1f1a14">w_ho = hidden → output gate</text>
+    <text x="580" y="385" font-size="10" fill="#1f1a14">b_o  = bias for output gate</text>
+    <text x="580" y="400" font-size="10" fill="#7a7060">Same pattern for f, i, g gates</text>
+  </svg>
+  
+  <p class="text-center text-xs text-[#7a7060] mt-1">The output gate (blue) reads the cell state but does not change it — that is why its gradient path is simple and clean (exactly the path shown in your attached backprop document).</p>
+</div>
+
+<!-- NUMERICAL WALKTHROUGH -->
+<h2>7. Concrete Numerical Walkthrough (ties directly to your backprop document)</h2>
+
+<div class="card">
+  <p>We will use a tiny slice of data and the exact numbers from the single-weight back-propagation example you attached, so the two documents connect seamlessly.</p>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <h4>Forward pass at time t−1 (values from your attached document)</h4>
+      <div class="eq text-sm">
+        \( x_{t-1} = 0.5 \)<br>
+        \( w_{xo_{t-1}} = 0.4 \)<br>
+        \( \text{net}_o = 0.1 \)<br>
+        \( o_{t-1} = \sigma(0.1) = 0.5250 \)<br>
+        \( \tanh(c_{t-1}) = 0.2717 \)<br>
+        \( h_{t-1} = 0.5250 \times 0.2717 = 0.1426 \)<br>
+        target = 0.8<br>
+        \( L = (0.8 - 0.1426)^2 = 0.4321 \)
+      </div>
+    </div>
+    <div>
+      <h4>What the gates are doing in this step</h4>
+      <ul class="text-sm space-y-1">
+        <li><strong>Output gate</strong> \( o = 0.5250 \): moderately open — it lets through about half of the cell state's information.</li>
+        <li>The cell state \( c \) is being read but not modified by this weight (that's why the gradient path for \( w_{xo} \) is simple — no extra cell-state branch).</li>
+        <li>Prediction \( h = 0.1426 \) is too low compared with target 0.8 → we will push \( w_{xo} \) upward.</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="note mt-4">
+    The full back-propagation for this exact weight \( w_{xo_{t-1}} \) (including the four derivatives and the weight update from 0.4000 → 0.4045) is shown step-by-step with path diagrams in the companion document you attached.
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<h2>8. Key Takeaways — Why the Gates Exist</h2>
+
+<div class="card">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="p-4 bg-[#fdecea] rounded-xl border border-[#c0392b]">
+      <div class="font-semibold text-[#c0392b] mb-1">Forget Gate</div>
+      <div class="text-sm">Solves the "old information pollutes forever" problem of pure long-term memory. It gives the cell a way to reset or down-weight stale content.</div>
+    </div>
+    <div class="p-4 bg-[#d5f5e3] rounded-xl border border-[#2e7d32]">
+      <div class="font-semibold text-[#2e7d32] mb-1">Input Gate + Candidate</div>
+      <div class="text-sm">Solves the "can't adapt to new information" problem. It lets the cell incorporate fresh signals without being overwhelmed by noise.</div>
+    </div>
+    <div class="p-4 bg-[#e8f1f8] rounded-xl border border-[#1f5f8b]">
+      <div class="font-semibold text-[#1f5f8b] mb-1">Output Gate</div>
+      <div class="text-sm">Solves the "too much irrelevant information flowing to the prediction" problem. It selects what the current output actually needs from the rich cell state.</div>
+    </div>
+  </div>
+  
+  <div class="mt-6 p-4 bg-white border border-[#d4ccc0] rounded-xl">
+    <p class="font-semibold">The beautiful part:</p>
+    <p class="text-sm">Every gate exists because of a concrete failure mode we discovered while sitting at the table trying to predict the next point on a chart. The architecture is not arbitrary — it is the minimal machinery required to solve the problems we actually encountered.</p>
+  </div>
+</div>
+
+<div class="text-center mt-12 text-sm text-[#7a7060]">
+  This document builds intuition. The companion back-propagation document shows exactly how the gradients flow for \( w_{xo_{t-1}} \) using the identical naming convention.<br>
+  Created to match your learning materials • July 2026
+</div>
+
+</div>
+
+<script>
+// Tailwind script
+function initializeTailwind() {
+  document.documentElement.style.setProperty('--accent', '#8B5E3C');
+}
+
+// Time series chart
+function createTimeSeriesChart() {
+  const ctx = document.getElementById('tsChart');
+  if (!ctx) return;
+  
+  const labels = Array.from({length: 70}, (_, i) => i + 1);
+  
+  // Synthetic series with trend + seasonality + regime shift around step 45
+  const actual = labels.map((t, i) => {
+    let base = 10 + 0.08 * t + 2.5 * Math.sin(2 * Math.PI * t / 12);
+    if (t > 45) base += 4.5; // regime shift
+    return base + (Math.random() - 0.5) * 1.8;
+  });
+  
+  // Long-term mean (cumulative) - lags after shift
+  let cumsum = 0;
+  const longTerm = actual.map((v, i) => {
+    cumsum += v;
+    return cumsum / (i + 1);
+  });
+  
+  // Short-term (last 4)
+  const shortTerm = actual.map((v, i) => {
+    if (i < 3) return v;
+    return (actual[i] + actual[i-1] + actual[i-2] + actual[i-3]) / 4;
+  });
+  
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Actual series',
+          data: actual,
+          borderColor: '#c0392b',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0.3
+        },
+        {
+          label: 'Long-term mean (Attempt #1)',
+          data: longTerm,
+          borderColor: '#8B5E3C',
+          borderWidth: 2,
+          borderDash: [4, 2],
+          pointRadius: 0
+        },
+        {
+          label: 'Short-term avg (Attempt #2)',
+          data: shortTerm,
+          borderColor: '#1f5f8b',
+          borderWidth: 2,
+          borderDash: [2, 2],
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 12 } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Time step' } },
+        y: { title: { display: true, text: 'Value' } }
+      }
+    }
+  });
+}
+
+window.onload = function() {
+  initializeTailwind();
+  createTimeSeriesChart();
+  
+  // Re-render MathJax if needed
+  if (window.MathJax) {
+    window.MathJax.typesetPromise();
+  }
+};
+</script>
+
+</body>
+</html>

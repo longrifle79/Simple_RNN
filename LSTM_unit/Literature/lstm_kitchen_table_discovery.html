@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How We Invented the LSTM at the Kitchen Table</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#faf8f3; --ink:#1f1a14; --bdr:#d4ccc0;
+    --forget:#1e8449; --forget-bg:#eafaf1;
+    --input:#2c5f8a;  --input-bg:#e8f1f8;
+    --cand:#7b2d8b;   --cand-bg:#f5eaf8;
+    --out:#c0392b;    --out-bg:#fdf0ee;
+    --cell:#b45309;   --cell-bg:#fef3c7;
+  }
+  body{background:var(--paper); color:var(--ink);}
+  .card{background:#fff; border:1px solid var(--bdr); border-radius:12px;}
+  .insight{background:#fff7ed; border-left:5px solid #ea580c;}
+  .fail{background:#fdecea; border-left:5px solid #c0392b;}
+  .win{background:#e8f0e3; border-left:5px solid #5a8f4d;}
+  .aside{background:#eef4fb; border-left:5px solid #4a7fba;}
+  .scaffold{background:#f5f1e9; border:1px solid #c8bfb0; border-radius:10px;}
+  .scaffold-label{font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+    color:#7a6050; font-weight:600;}
+  details{border:1px solid var(--bdr); border-radius:10px; background:#fff;}
+  details>summary{cursor:pointer; font-weight:600; padding:.8rem 1.1rem; color:#5c4630;}
+  details[open]>summary{border-bottom:1px solid var(--bdr);}
+  details>div{padding:1rem 1.25rem;}
+  .gate-f{border-top:6px solid var(--forget);} .gate-i{border-top:6px solid var(--input);}
+  .gate-g{border-top:6px solid var(--cand);}   .gate-o{border-top:6px solid var(--out);}
+  .toc a{color:#5c4630;} .toc a:hover{color:#b45309; text-decoration:underline;}
+  h2{scroll-margin-top:90px;}
+  .katex{font-size:1.05em;}
+</style>
+</head>
+<body class="antialiased">
+
+<!-- ══════════════ STICKY TOC ══════════════ -->
+<nav class="sticky top-0 z-50 bg-[#faf8f3]/95 backdrop-blur border-b border-[#d4ccc0]">
+  <div class="max-w-5xl mx-auto px-4 py-2 toc text-sm flex flex-wrap gap-x-4 gap-y-1 justify-center">
+    <a href="#s1">1&nbsp;The&nbsp;Chart</a><a href="#s2">2&nbsp;Long-Term&nbsp;Only</a>
+    <a href="#s3">3&nbsp;Short-Term&nbsp;Only</a><a href="#s4">4&nbsp;The&nbsp;Realization</a>
+    <a href="#s5">5&nbsp;Building&nbsp;the&nbsp;Cell</a><a href="#s6">6&nbsp;Full&nbsp;Diagram</a>
+    <a href="#s7">7&nbsp;The&nbsp;Numbers</a><a href="#s8">8&nbsp;The&nbsp;History</a>
+    <a href="#s9">9&nbsp;Takeaways</a>
+  </div>
+</nav>
+
+<!-- ══════════════ SECTION 0: HERO ══════════════ -->
+<header class="max-w-4xl mx-auto px-6 pt-14 pb-8 text-center">
+  <h1 class="text-4xl md:text-5xl font-bold text-[#3f2a1d] leading-tight">How We Invented the LSTM<br>at the Kitchen Table</h1>
+  <p class="mt-4 text-lg text-[#7a7060]">A step-by-step collaborative discovery story: one chart, a whiteboard, a few naive ideas that fail in instructive ways &mdash; and the architecture that falls out of fixing them.</p>
+  <p class="mt-4 text-sm text-[#8a7f70] max-w-2xl mx-auto">Weight and bias names throughout this document follow the exact convention of the companion backpropagation document
+  (e.g. \( w_{xo_{t-1}} \), \( \text{net}_o \), \( b_f \)), so you can move between the two without translating notation.
+  If you are coming from the gate diagrams: the input gate \( i_t \) here is the &ldquo;% Potential Memory&rdquo; block, and the candidate \( g_t \) is the &ldquo;Potential Long Memory&rdquo; block.</p>
+</header>
+
+<main class="max-w-4xl mx-auto px-6 pb-24 space-y-16">
+
+<!-- ══════════════ SECTION 1 ══════════════ -->
+<section id="s1">
+  <h2 class="text-3xl font-bold text-[#3f2a1d] border-b-2 border-[#EDE4D9] pb-2">1 &middot; The Problem &amp; the First Questions</h2>
+
+  <p class="mt-5">Picture the scene. We are sitting around a wooden kitchen table. In the middle is a large printed chart of a value measured every month for years &mdash; it could be a stock price, a temperature, a sales figure. There are markers, coffee, and a whiteboard leaning against the wall. Our job, given everything on this chart, is to <strong>predict the next point</strong>.</p>
+
+  <p class="mt-3">Before any equations, we just <em>look</em> at it:</p>
+
+  <div class="card p-4 mt-4">
+    <canvas id="chartMain" height="120"></canvas>
+    <p class="text-center text-sm italic text-[#7a6050] mt-2">Our chart: a steady upward trend, a repeating seasonal wave &mdash; and around month 60, something breaks. The world the data lived in changed (a <strong>regime shift</strong>), and the old level never comes back.</p>
+  </div>
+
+  <p class="mt-5">Staring at it, the first natural questions come fast:</p>
+  <ul class="list-disc ml-6 mt-2 space-y-2">
+    <li>&ldquo;Should tomorrow&rsquo;s guess mostly depend on <strong>yesterday</strong>? Or on the <strong>whole history</strong>?&rdquo;</li>
+    <li>&ldquo;There&rsquo;s clearly a repeating wave &mdash; how do we <strong>remember the pattern</strong> from a full cycle ago?&rdquo;</li>
+    <li>&ldquo;Look at month 60. Everything before it suddenly stopped being relevant. How would a predictor <strong>let go</strong> of the old world?&rdquo;</li>
+    <li>&ldquo;And whatever we build &mdash; can it <strong>learn</strong> these judgements from the data, instead of us hand-tuning them?&rdquo;</li>
+  </ul>
+
+  <p class="mt-4">Nobody says &ldquo;LSTM.&rdquo; Nobody knows that word yet. We just start with the simplest idea anyone can propose.</p>
+</section>
+
+<!-- ══════════════ SECTION 2 ══════════════ -->
+<section id="s2">
+  <h2 class="text-3xl font-bold text-[#3f2a1d] border-b-2 border-[#EDE4D9] pb-2">2 &middot; Attempt #1 &mdash; Only Long-Term Memory</h2>
+
+  <p class="mt-5">Someone says: <em>&ldquo;What if we just average everything we&rsquo;ve ever seen? The average is stable, it uses all the data, and it can&rsquo;t be fooled by one weird day.&rdquo;</em></p>
+
+  <div class="scaffold p-4 mt-4">
+    <div class="scaffold-label mb-2">Start simple &mdash; the plain-English idea</div>
+    <p>Our prediction for the next point is just: <em>add up every value seen so far and divide by how many there are.</em></p>
+  </div>
+  <div class="scaffold p-4 mt-3">
+    <div class="scaffold-label mb-2">Now as a formula &mdash; the cumulative mean</div>
+    <p>If the values so far are \( x_1, x_2, \ldots, x_t \), our memory \( m_t \) is:</p>
+    \[ m_t = \frac{1}{t}\sum_{k=1}^{t} x_k \]
+    <p class="mt-2">The \(\sum\) just means &ldquo;add them all up,&rdquo; and dividing by \(t\) makes it an average.</p>
+  </div>
+  <div class="scaffold p-4 mt-3">
+    <div class="scaffold-label mb-2">One step further &mdash; write it as an update rule</div>
+    <p>We don&rsquo;t actually need to re-add the whole history each day. A little algebra turns the same average into a <em>running update</em>:</p>
+    \[ m_t = m_{t-1} + \frac{1}{t}\bigl(x_t - m_{t-1}\bigr) \]
+    <p class="mt-2">Read it aloud: <em>&ldquo;new memory = old memory, nudged toward today&rsquo;s value by a shrinking amount \( \tfrac{1}{t} \).&rdquo;</em> This form matters, because it is our first <strong>recurrence</strong> &mdash; a memory carried forward and updated. Hold onto that shape; we will see it again.</p>
+  </div>
+
+  <p class="mt-5">We try it on the chart:</p>
+  <div class="card p-4 mt-3">
+    <canvas id="chartCum" height="120"></canvas>
+    <p class="text-center text-sm italic text-[#7a6050] mt-2">The cumulative mean (green) versus reality (gray). Watch what happens after the regime shift at month 60.</p>
+  </div>
+
+  <div class="fail p-4 mt-5 rounded-r-lg">
+    <p><strong>Where it fails &mdash; and exactly why.</strong> After month 60 the world drops to a new level, but our green line barely reacts. The math says why: at \( t=61 \), today&rsquo;s value can only move the memory by \( \tfrac{1}{61} \) of the surprise. Suppose the old average was about \(35\) and the new reality is about \(15\):</p>
+    \[ m_{61} = 35 + \tfrac{1}{61}\,(15 - 35) \approx 35 - 0.33 = 34.67 \]
+    <p class="mt-2">One month of the new world moved us a third of a point. To actually reach \(15\) we would need the new regime to outweigh <em>the entire old history</em> &mdash; years of lag. And it only gets worse with time, because \( \tfrac{1}{t} \) keeps shrinking: the more we have seen, the more stubborn the memory becomes.</p>
+  </div>
+
+  <div class="mt-5 grid md:grid-cols-2 gap-4 items-center">
+    <div class="card p-3">
+      <svg viewBox="0 0 420 260" class="w-full">
+        <defs><marker id="mkA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M1,2 L9,5 L1,8" fill="none" stroke="#1e8449" stroke-width="2" stroke-linecap="round"/></marker></defs>
+        <text x="210" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#3f2a1d">The memory bucket (no drain)</text>
+        <!-- faucet -->
+        <rect x="180" y="40" width="60" height="16" rx="4" fill="#8a9bb0"/>
+        <rect x="204" y="56" width="12" height="14" fill="#8a9bb0"/>
+        <text x="210" y="36" text-anchor="middle" font-size="10" fill="#5c6b80">every new value pours in</text>
+        <circle cx="210" cy="82" r="4" fill="#4a7fba"/><circle cx="210" cy="98" r="4" fill="#4a7fba"/>
+        <!-- bucket -->
+        <path d="M120,120 L140,232 L280,232 L300,120 Z" fill="#fef3c7" stroke="#b45309" stroke-width="2.5"/>
+        <rect x="132" y="150" width="156" height="76" fill="#4a7fba" opacity="0.45"/>
+        <text x="210" y="192" text-anchor="middle" font-size="11" fill="#1a3a5c" font-weight="700">years of old water</text>
+        <!-- no drain -->
+        <line x1="150" y1="232" x2="270" y2="232" stroke="#c0392b" stroke-width="3"/>
+        <text x="210" y="252" text-anchor="middle" font-size="11" fill="#c0392b" font-weight="700">no drain &mdash; nothing ever leaves</text>
+        <!-- new drop annotation -->
+        <line x1="300" y1="100" x2="330" y2="100" stroke="#1e8449" stroke-width="2" marker-end="url(#mkA)" transform="rotate(180 315 100)"/>
+        <text x="352" y="92" text-anchor="middle" font-size="10" fill="#1e8449">one new cup</text>
+        <text x="352" y="106" text-anchor="middle" font-size="10" fill="#1e8449">barely changes</text>
+        <text x="352" y="120" text-anchor="middle" font-size="10" fill="#1e8449">the flavor</text>
+      </svg>
+    </div>
+    <div>
+      <p><strong>The analogy that sticks:</strong> the cumulative mean is a soup pot that every cook in history has poured a cup into &mdash; and the pot has <em>no drain</em>. By year five, pouring in one cup of a brand-new recipe changes the flavor by almost nothing. The soup doesn&rsquo;t taste like today; it tastes like <em>the average of everything that ever happened</em>.</p>
+      <p class="mt-3">The memory isn&rsquo;t wrong because it remembers &mdash; it&rsquo;s wrong because it <em>cannot forget</em>.</p>
+    </div>
+  </div>
+
+  <div class="insight p-4 mt-6 rounded-r-lg">
+    <p class="font-bold text-[#c2410c]">Whiteboard insight #1</p>
+    <p class="mt-1">&ldquo;Remembering everything forever makes us blind to change. We need a way to <strong>selectively forget</strong> &mdash; a drain we control.&rdquo;</p>
+  </div>
+</section>
+<!-- ══════════════ SECTION 3 ══════════════ -->
+<section id="s3">
+  <h2 class="text-3xl font-bold text-[#3f2a1d] border-b-2 border-[#EDE4D9] pb-2">3 &middot; Attempt #2 &mdash; Only Short-Term Memory</h2>
+
+  <p class="mt-5">Someone across the table pushes back: <em>&ldquo;Fine &mdash; then let&rsquo;s do the opposite. Forget history. Tomorrow will look like today. Just predict the most recent value.&rdquo;</em></p>
+
+  <div class="scaffold p-4 mt-4">
+    <div class="scaffold-label mb-2">Start simple &mdash; the plain-English idea</div>
+    <p>Prediction = the last thing we saw. \( \hat{x}_{t+1} = x_t \). Instant reaction, zero lag.</p>
+  </div>
+  <div class="scaffold p-4 mt-3">
+    <div class="scaffold-label mb-2">A gentler version &mdash; a small sliding window</div>
+    <p>The last value alone is jumpy, so we soften it: average just the last few points &mdash; say a window of 3:</p>
+    \[ m_t = \frac{x_t + x_{t-1} + x_{t-2}}{3} \]
+    <p class="mt-2">Anything older than three steps ago is simply gone. The window slides forward, and old values fall off the back edge.</p>
+  </div>
+
+  <div class="card p-4 mt-4">
+    <canvas id="chartWin" height="120"></canvas>
+    <p class="text-center text-sm italic text-[#7a6050] mt-2">The 3-step window (red) hugs the data and adapts to the regime shift almost instantly. It looks great&hellip; until we ask it the questions that need memory.</p>
+  </div>
+
+  <div class="fail p-4 mt-5 rounded-r-lg">
+    <p><strong>Where it fails &mdash; and exactly why.</strong> Look at the seasonal wave in the chart: it repeats every 12 months. To predict a winter dip, we need information from <em>a full cycle ago</em>. But our memory is a window of width 3:</p>
+    \[ m_t \text{ depends only on } x_t,\ x_{t-1},\ x_{t-2} \quad\Longrightarrow\quad \frac{\partial m_t}{\partial x_{t-12}} = 0 \]
+    <p class="mt-2">Read that last expression gently: it is a partial derivative asking <em>&ldquo;if the value 12 months ago had been different, would our memory change?&rdquo;</em> &mdash; and the answer is exactly zero. Not &ldquo;a little.&rdquo; Zero. Whatever happened one season ago has <strong>no path</strong> into our prediction. The window didn&rsquo;t forget it gradually; it fell off the edge completely.</p>
+  </div>
+
+  <div class="mt-5 grid md:grid-cols-2 gap-4 items-center">
+    <div class="card p-3">
+      <svg viewBox="0 0 420 240" class="w-full">
+        <text x="210" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#3f2a1d">The window that falls off the edge</text>
+        <!-- conveyor of squares -->
+        <line x1="20" y1="150" x2="330" y2="150" stroke="#d4ccc0" stroke-width="2"/>
+        <!-- cliff -->
+        <line x1="330" y1="150" x2="330" y2="220" stroke="#d4ccc0" stroke-width="2"/>
+        <!-- boxes -->
+        <g font-size="10" text-anchor="middle">
+          <rect x="30" y="120" width="34" height="30" fill="#e8f1f8" stroke="#8aa8c8"/><text x="47" y="139" fill="#2c5f8a">x_t</text>
+          <rect x="70" y="120" width="34" height="30" fill="#e8f1f8" stroke="#8aa8c8"/><text x="87" y="139" fill="#2c5f8a">x_t-1</text>
+          <rect x="110" y="120" width="34" height="30" fill="#e8f1f8" stroke="#8aa8c8"/><text x="127" y="139" fill="#2c5f8a">x_t-2</text>
+          <rect x="150" y="120" width="34" height="30" fill="#f5f1e9" stroke="#c8bfb0"/><text x="167" y="139" fill="#9a9084">x_t-3</text>
+          <rect x="190" y="120" width="34" height="30" fill="#f5f1e9" stroke="#c8bfb0"/><text x="207" y="139" fill="#9a9084">&hellip;</text>
+          <rect x="230" y="120" width="34" height="30" fill="#f5f1e9" stroke="#c8bfb0"/><text x="247" y="139" fill="#9a9084">x_t-11</text>
+          <!-- falling box -->
+          <rect x="336" y="176" width="34" height="30" fill="#fdecea" stroke="#c0392b" transform="rotate(24 353 191)"/>
+          <text x="356" y="196" fill="#c0392b" transform="rotate(24 353 191)">x_t-12</text>
+        </g>
+        <!-- window frame -->
+        <rect x="26" y="112" width="124" height="46" fill="none" stroke="#c0392b" stroke-width="3" rx="6"/>
+        <text x="88" y="104" text-anchor="middle" font-size="11" fill="#c0392b" font-weight="700">our whole memory</text>
+        <text x="368" y="230" text-anchor="middle" font-size="10" fill="#c0392b">the seasonal clue, gone</text>
+      </svg>
+    </div>
+    <div>
+      <p><strong>The analogy that sticks:</strong> short-term-only memory is working from sticky notes on a tiny desk. Every new note pushes the oldest one into the trash. It doesn&rsquo;t matter how important the old note was &mdash; &ldquo;the dip always comes in December&rdquo; gets thrown out with the same indifference as &ldquo;Tuesday was cloudy.&rdquo; Importance plays no role; only <em>age</em> does.</p>
+      <p class="mt-3">This memory isn&rsquo;t wrong because it forgets &mdash; it&rsquo;s wrong because it <em>cannot choose what to keep</em>.</p>
+    </div>
+  </div>
+
+  <div class="insight p-4 mt-6 rounded-r-lg">
+    <p class="font-bold text-[#c2410c]">Whiteboard insight #2</p>
+    <p class="mt-1">&ldquo;Reacting instantly makes us amnesiac. We need a way to <strong>preserve important information across many steps</strong> &mdash; a shelf where chosen things can sit safely, out of the window&rsquo;s reach.&rdquo;</p>
+  </div>
+</section>
+
+<!-- ══════════════ SECTION 4 ══════════════ -->
+<section id="s4">
+  <h2 class="text-3xl font-bold text-[#3f2a1d] border-b-2 border-[#EDE4D9] pb-2">4 &middot; The Realization &mdash; We Need Both, But With Control</h2>
+
+  <p class="mt-5">The table goes quiet for a minute. Two attempts, two opposite failures:</p>
+  <div class="grid md:grid-cols-2 gap-4 mt-4">
+    <div class="card p-4"><p class="font-bold text-[#1e8449]">Long-term only</p><p class="mt-1 text-sm">Stable, sees the whole history &mdash; but <strong>can&rsquo;t forget</strong>, so it lags forever after a change.</p></div>
+    <div class="card p-4"><p class="font-bold text-[#c0392b]">Short-term only</p><p class="mt-1 text-sm">Adapts instantly &mdash; but <strong>can&rsquo;t choose what to keep</strong>, so anything old is lost regardless of importance.</p></div>
+  </div>
+
+  <p class="mt-5">Then someone says the sentence that changes everything: <em>&ldquo;These aren&rsquo;t competing ideas. They&rsquo;re two different <strong>jobs</strong>. What if we keep <strong>two memories</strong> &mdash; a protected long-term ledger AND a fast working note &mdash; and add <strong>valves</strong> that control what flows between them?&rdquo;</em></p>
+
+  <p class="mt-3">New questions immediately pour out, and each will become a component:</p>
+  <ul class="list-disc ml-6 mt-2 space-y-2">
+    <li>&ldquo;How much of the ledger should survive each day?&rdquo; &mdash; that valve will become the <strong style="color:var(--forget)">forget gate</strong>.</li>
+    <li>&ldquo;What should today write into the ledger, and how much do we trust it?&rdquo; &mdash; the <strong style="color:var(--cand)">candidate</strong> and the <strong style="color:var(--input)">input gate</strong>.</li>
+    <li>&ldquo;How much of the ledger do we voice as today&rsquo;s actual answer?&rdquo; &mdash; the <strong style="color:var(--out)">output gate</strong>.</li>
+    <li>&ldquo;And who sets the valves?&rdquo; &mdash; nobody. They must be <strong>learned</strong>: each valve is a tiny neuron whose weights are trained by the same gradient descent that trains everything else.</li>
+  </ul>
+
+  <div class="aside p-4 mt-5 rounded-r-lg">
+    <p><strong>One design decision before we build:</strong> every valve will output a number between 0 and 1 (a &ldquo;percentage open&rdquo;), computed from the same two things everywhere: <em>today&rsquo;s input</em> \(x_t\) and <em>yesterday&rsquo;s working note</em> \(h_{t-1}\). Same recipe, different learned weights per valve. That uniformity is what makes the design feel inevitable once you see it.</p>
+  </div>
+</section>
+
+<!-- ══════════════ SECTION 5 ══════════════ -->
+<section id="s5">
+  <h2 class="text-3xl font-bold text-[#3f2a1d] border-b-2 border-[#EDE4D9] pb-2">5 &middot; Building the Cell &mdash; One Component at a Time</h2>
+
+  <h3 class="text-xl font-bold text-[#b45309] mt-6">5.0 &middot; The cell state: a conveyor belt for memory</h3>
+  <p class="mt-3">First, the protected ledger itself. We give it a name, \( c_t \) (the <strong>cell state</strong>), and one sacred rule: it travels forward on its own line &mdash; picture a conveyor belt running across the top of the machine &mdash; and each step may only do two gentle things to it: <em>scale it</em> and <em>add to it</em>. No squashing functions on the belt itself, no weight matrices mangling it in transit.</p>
+  <div class="scaffold p-4 mt-3">
+    <div class="scaffold-label mb-2">The simplest possible form first</div>
+    \[ c_t = c_{t-1} \]
+    <p class="mt-2">&ldquo;Whatever was on the belt stays on the belt.&rdquo; A perfect, boring memory. Everything we build next is a <em>controlled modification</em> of this line.</p>
+  </div>
+  <div class="aside p-4 mt-3 rounded-r-lg">
+    <p><strong>A preview of why this belt matters so much:</strong> the people who first solved this problem discovered that when memory is repeatedly squashed and re-weighted at every step, the training signal (the gradient) shrinks or explodes exponentially as it flows back through time. The untouched belt is the cure &mdash; the full story is in <a href="#s8" class="underline text-[#4a7fba]">Section 8</a>.</p>
+  </div>
+
+  <!-- ── FORGET GATE ── -->
+  <div class="card gate-f p-5 mt-8">
+    <h3 class="text-xl font-bold" style="color:var(--forget)">5.1 &middot; The Forget Gate &mdash; the drain we control</h3>
+    <p class="mt-3"><strong>The intuition, simply:</strong> we want to multiply the old ledger by a number between 0 and 1. Multiply by 1 &rarr; keep everything. Multiply by 0 &rarr; wipe it clean. Multiply by 0.6 &rarr; keep 60%. That single multiply is the drain our soup pot never had.</p>
+
+    <div class="scaffold p-4 mt-3">
+      <div class="scaffold-label mb-2">Step 1 &mdash; the idea as math</div>
+      \[ c_t = f_t \times c_{t-1}, \qquad 0 \le f_t \le 1 \]
+      <p class="mt-2">One number \( f_t \), one multiplication. But who picks \( f_t \)?</p>
+    </div>
+    <div class="scaffold p-4 mt-3">
+      <div class="scaffold-label mb-2">Step 2 &mdash; let the data pick it: a weighted sum</div>
+      <p>We compute a raw score from what we can see &mdash; today&rsquo;s input and yesterday&rsquo;s working note &mdash; each with its own learned weight, plus a bias:</p>
+      \[ \text{net}_f = w_{xf}\,x_t + w_{hf}\,h_{t-1} + b_f \]
+      <p class="mt-2">Symbol by symbol: \( w_{xf} \) is <em>&ldquo;how much today&rsquo;s input should influence forgetting,&rdquo;</em> \( w_{hf} \) is <em>&ldquo;how much yesterday&rsquo;s note should,&rdquo;</em> and \( b_f \) is the gate&rsquo;s default lean when both are quiet.</p>
+    </div>
+    <div class="scaffold p-4 mt-3">
+      <div class="scaffold-label mb-2">Step 3 &mdash; squash the score into a valve position</div>
+      <p>The raw score can be any number; a valve needs 0-to-1. The sigmoid does exactly that:</p>
+      \[ f_t = \sigma(\text{net}_f) = \frac{1}{1+e^{-\text{net}_f}} \]
+      <details class="mt-3"><summary>Rusty on the sigmoid? A 60-second refresher</summary><div>
+        <p>\( \sigma \) maps any real number smoothly into \((0,1)\): large positive scores &rarr; near 1 (valve open), large negative &rarr; near 0 (valve shut), zero &rarr; exactly 0.5. Two bonus facts we&rsquo;ll cash in during backpropagation: it is differentiable everywhere, and its derivative has the tidy form \( \sigma(1-\sigma) \) &mdash; computable from the forward value alone.</p>
+      </div></details>
+    </div>
+
+    <div class="mt-4 grid md:grid-cols-2 gap-4 items-center">
+      <div>
+        <svg viewBox="0 0 460 250" class="w-full">
+          <defs><marker id="mkF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M1,2 L9,5 L1,8" fill="none" stroke="#1e8449" stroke-width="2" stroke-linecap="round"/></marker></defs>
+          <text x="230" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="#1e8449">FORGET GATE</text>
+          <!-- belt -->
+          <line x1="10" y1="60" x2="450" y2="60" stroke="#b45309" stroke-width="3"/>
+          <text x="30" y="50" font-size="10" fill="#b45309">c_{t-1}</text>
+          <text x="420" y="50" font-size="10" fill="#b45309">&rarr;</text>
+          <circle cx="300" cy="60" r="16" fill="#fff" stroke="#b45309" stroke-width="2.5"/>
+          <text x="300" y="65" text-anchor="middle" font-size="14" fill="#b45309" font-weight="700">&times;</text>
+          <!-- weights -->
+          <rect x="60" y="180" width="88" height="40" rx="7" fill="#fcf3cf" stroke="#d4ac0d" stroke-width="1.5"/>
+          <text x="104" y="197" text-anchor="middle" font-size="10" fill="#9a7d0a">h_{t-1} &times;</text>
+          <text x="104" y="212" text-anchor="middle" font-size="11" fill="#9a7d0a" font-weight="700">w_hf</text>
+          <rect x="180" y="180" width="88" height="40" rx="7" fill="#d5f5e3" stroke="#27ae60" stroke-width="1.5"/>
+          <text x="224" y="197" text-anchor="middle" font-size="10" fill="#1e5e33">x_t &times;</text>
+          <text x="224" y="212" text-anchor="middle" font-size="11" fill="#1e5e33" font-weight="700">w_xf</text>
+          <!-- sum -->
+          <rect x="120" y="120" width="120" height="34" rx="7" fill="#fdecea" stroke="#c0392b" stroke-width="1.5"/>
+          <text x="180" y="141" text-anchor="middle" font-size="10" fill="#c0392b">net_f = sum + b_f</text>
+          <line x1="104" y1="180" x2="160" y2="156" stroke="#d4ac0d" stroke-width="2" marker-end="url(#mkF)"/>
+          <line x1="224" y1="180" x2="200" y2="156" stroke="#27ae60" stroke-width="2" marker-end="url(#mkF)"/>
+          <!-- sigmoid -->
+          <rect x="260" y="112" width="72" height="46" rx="8" fill="#eafaf1" stroke="#1e8449" stroke-width="2"/>
+          <path d="M270,148 C286,148 292,122 306,122 C316,122 320,122 324,122" fill="none" stroke="#1e8449" stroke-width="2"/>
+          <text x="296" y="106" text-anchor="middle" font-size="10" fill="#1e8449" font-weight="700">&sigma;</text>
+          <line x1="240" y1="137" x2="258" y2="137" stroke="#c0392b" stroke-width="2" marker-end="url(#mkF)"/>
+          <!-- f up to multiply -->
+          <line x1="300" y1="112" x2="300" y2="78" stroke="#1e8449" stroke-width="2.4" marker-end="url(#mkF)"/>
+          <text x="316" y="96" font-size="11" fill="#1e8449" font-weight="700">f_t</text>
+        </svg>
+      </div>
+      <div>
+        <p><strong>Analogy:</strong> \( f_t \) is a hand on the drain valve of the soup pot &mdash; but the hand belongs to a taster who samples <em>today&rsquo;s ingredients</em> (\(x_t\)) and <em>yesterday&rsquo;s tasting notes</em> (\(h_{t-1}\)) before deciding how much old soup to let out. On an ordinary day the valve stays nearly shut (\(f_t \approx 1\), keep the soup). The day the menu changes, the taster opens the drain (\(f_t \approx 0\)) and the pot starts fresh.</p>
+      </div>
+    </div>
+
+    <div class="win p-4 mt-4 rounded-r-lg">
+      <p><strong>Which failure this solves:</strong> Attempt #1&rsquo;s. The cumulative mean lagged for years after the regime shift because its memory had no drain. With \( f_t \), one step of &ldquo;valve open&rdquo; can erase <em>any</em> amount of stale memory &mdash; the multiply scales the whole ledger at once, something no amount of averaging-in new data could do.</p>
+    </div>
+  </div>
+
+  <!-- ── INPUT GATE + CANDIDATE ── -->
+  <div class="card gate-i p-5 mt-8">
+    <h3 class="text-xl font-bold" style="color:var(--input)">5.2 &middot; The Input Gate + Candidate &mdash; write worthwhile things, in the right amount</h3>
+    <p class="mt-3"><strong>The intuition, simply:</strong> draining is only half the job &mdash; we also need to <em>write</em>. And writing is really two separate questions: <em>what</em> should today&rsquo;s entry say, and <em>how much of it</em> do we trust enough to commit? Two questions, two components.</p>
+
+    <div class="scaffold p-4 mt-3">
+      <div class="scaffold-label mb-2">Step 1 &mdash; the candidate: what the entry says</div>
+      <p>A proposal for the new content, built the same way as every valve &mdash; weighted sum of \(x_t\) and \(h_{t-1}\) &mdash; but squashed with <strong>tanh</strong> instead of sigmoid:</p>
+      \[ \text{net}_g = w_{xg}\,x_t + w_{hg}\,h_{t-1} + b_g \qquad\Rightarrow\qquad g_t = \tanh(\text{net}_g) \]
+      <details class="mt-3"><summary>Why tanh here and not sigmoid?</summary><div>
+        <p>Because this is a <em>value</em>, not a valve. tanh outputs \((-1, +1)\): the proposal can be positive (&ldquo;push the ledger up&rdquo;) or negative (&ldquo;push it down&rdquo;), and it is bounded so no single day can slam the ledger to an extreme. A sigmoid&rsquo;s \((0,1)\) range could only ever add &mdash; we&rsquo;d lose the ability to propose &ldquo;down.&rdquo; (You may also see the candidate written \( \tilde{c}_t \); same object.)</p>
+      </div></details>
+    </div>
+    <div class="scaffold p-4 mt-3">
+      <div class="scaffold-label mb-2">Step 2 &mdash; the input gate: how much of it we trust</div>
+      <p>A valve, identical recipe to the forget gate, with its own weights:</p>
+      \[ \text{net}_i = w_{xi}\,x_t + w_{hi}\,h_{t-1} + b_i \qquad\Rightarrow\qquad i_t = \sigma(\text{net}_i) \]
+    </div>
+    <div class="scaffold p-4 mt-3">
+      <div class="scaffold-label mb-2">Step 3 &mdash; the full cell update: keep + add</div>
+      <p>Plain English first: <em>&ldquo;new ledger = what we decided to keep, plus what we decided to add.&rdquo;</em> Then the equation:</p>
+      \[ c_t = \underbrace{f_t \cdot c_{t-1}}_{\text{what we keep}} \;+\; \underbrace{i_t \cdot g_t}_{\text{what we add}} \]
+      <p class="mt-2">The added amount is a product: <em>content</em> \( g_t \) times <em>trust</em> \( i_t \). A bold claim we don&rsquo;t trust (\(g_t\) large, \(i_t\) small) barely moves the ledger; a modest claim we fully trust goes in cleanly. (With vectors these products are element-wise &mdash; each memory slot has its own valve &mdash; but one slot at a time is all we need today.)</p>
+    </div>
+
+    <div class="mt-4 grid md:grid-cols-2 gap-4 items-center">
+      <div>
+        <svg viewBox="0 0 460 260" class="w-full">
+          <defs><marker id="mkI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M1,2 L9,5 L1,8" fill="none" stroke="#2c5f8a" stroke-width="2" stroke-linecap="round"/></marker></defs>
+          <text x="230" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#2c5f8a">INPUT GATE &nbsp;+&nbsp; CANDIDATE &nbsp;&rarr;&nbsp; the write</text>
+          <!-- belt with + -->
+          <line x1="10" y1="52" x2="450" y2="52" stroke="#b45309" stroke-width="3"/>
+          <circle cx="330" cy="52" r="16" fill="#fff" stroke="#b45309" stroke-width="2.5"/>
+          <text x="330" y="58" text-anchor="middle" font-size="15" fill="#b45309" font-weight="700">+</text>
+          <text x="30" y="42" font-size="10" fill="#b45309">f_t &middot; c_{t-1}</text>
+          <text x="412" y="42" font-size="10" fill="#b45309">c_t &rarr;</text>
+          <!-- i block -->
+          <rect x="60" y="120" width="120" height="52" rx="9" fill="#e8f1f8" stroke="#2c5f8a" stroke-width="2"/>
+          <text x="120" y="141" text-anchor="middle" font-size="10" fill="#2c5f8a">&sigma;(w_xi&middot;x_t + w_hi&middot;h_{t-1} + b_i)</text>
+          <text x="120" y="160" text-anchor="middle" font-size="12" fill="#2c5f8a" font-weight="700">i_t &nbsp;(trust)</text>
+          <!-- g block -->
+          <rect x="60" y="192" width="120" height="52" rx="9" fill="#f5eaf8" stroke="#7b2d8b" stroke-width="2"/>
+          <text x="120" y="213" text-anchor="middle" font-size="10" fill="#7b2d8b">tanh(w_xg&middot;x_t + w_hg&middot;h_{t-1} + b_g)</text>
+          <text x="120" y="232" text-anchor="middle" font-size="12" fill="#7b2d8b" font-weight="700">g_t &nbsp;(content)</text>
+          <!-- multiply -->
+          <circle cx="252" cy="182" r="16" fill="#fff" stroke="#b45309" stroke-width="2.5"/>
+          <text x="252" y="188" text-anchor="middle" font-size="14" fill="#b45309" font-weight="700">&times;</text>
+          <line x1="180" y1="146" x2="238" y2="172" stroke="#2c5f8a" stroke-width="2.2" marker-end="url(#mkI)"/>
+          <line x1="180" y1="218" x2="238" y2="192" stroke="#7b2d8b" stroke-width="2.2" marker-end="url(#mkI)"/>
+          <!-- up to + -->
+          <line x1="264" y1="170 " x2="322" y2="66" stroke="#b45309" stroke-width="2.4" marker-end="url(#mkI)"/>
+          <text x="312" y="128" font-size="10" fill="#b45309" font-weight="700">i_t &middot; g_t</text>
+        </svg>
+      </div>
+      <div>
+        <p><strong>Analogy:</strong> a newsroom. The <span style="color:var(--cand); font-weight:700">candidate</span> is the reporter&rsquo;s draft &mdash; it can praise or criticize (positive or negative), but house style caps its intensity (bounded by tanh). The <span style="color:var(--input); font-weight:700">input gate</span> is the editor&rsquo;s red pen &mdash; a well-sourced story runs at nearly full strength (\(i_t \approx 1\)); a flimsy rumor gets cut to a footnote (\(i_t \approx 0\)). What lands in the permanent record is always <em>draft &times; editorial trust</em>.</p>
+      </div>
+    </div>
+
+    <div class="win p-4 mt-4 rounded-r-lg">
+      <p><strong>Which failure this solves:</strong> Attempt #2&rsquo;s. The sliding window kept things by <em>age</em>; the input gate keeps things by <em>importance</em>. &ldquo;The dip comes in December&rdquo; can be written into the ledger with high trust and then ride the belt safely for twelve months &mdash; while &ldquo;Tuesday was cloudy&rdquo; gets gated down to nearly nothing at the moment of writing.</p>
+    </div>
+  </div>
+
+  <!-- ── OUTPUT GATE ── -->
+  <div class="card gate-o p-5 mt-8">
+    <h3 class="text-xl font-bold" style="color:var(--out)">5.3 &middot; The Output Gate &mdash; knowing versus saying</h3>
+    <p class="mt-3"><strong>The intuition, simply:</strong> the ledger is our private knowledge; the prediction is what we say out loud today. Those aren&rsquo;t the same thing. We might be carrying the December-dip fact for months before it becomes relevant &mdash; the ledger should hold it quietly, and only <em>voice</em> it when the moment comes. One more valve.</p>
+
+    <div class="scaffold p-4 mt-3">
+      <div class="scaffold-label mb-2">Step 1 &mdash; the valve (same trusted recipe, third set of weights)</div>
+      \[ \text{net}_o = w_{xo}\,x_t + w_{ho}\,h_{t-1} + b_o \qquad\Rightarrow\qquad o_t = \sigma(\text{net}_o) \]
+    </div>
+    <div class="scaffold p-4 mt-3">
+      <div class="scaffold-label mb-2">Step 2 &mdash; the spoken answer: the new working note</div>
+      <p>Squash the ledger to a civilized range with tanh, then let the valve decide how much of it escapes:</p>
+      \[ h_t = o_t \cdot \tanh(c_t) \]
+      <p class="mt-2">And notice the loop close: this \( h_t \) is exactly the &ldquo;yesterday&rsquo;s working note&rdquo; that feeds all four weighted sums at the next step. The short-term memory isn&rsquo;t a separate gadget bolted on &mdash; it <em>is</em> the gated glimpse of the long-term ledger, refreshed every step.</p>
+    </div>
+
+    <div class="mt-4 grid md:grid-cols-2 gap-4 items-center">
+      <div>
+        <svg viewBox="0 0 460 230" class="w-full">
+          <defs><marker id="mkO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/></marker></defs>
+          <text x="230" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#c0392b">OUTPUT GATE</text>
+          <line x1="10" y1="50" x2="450" y2="50" stroke="#b45309" stroke-width="3"/>
+          <text x="420" y="40" font-size="10" fill="#b45309">c_t &rarr;</text>
+          <!-- tanh tap -->
+          <rect x="180" y="80" width="86" height="44" rx="8" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+          <text x="223" y="106" text-anchor="middle" font-size="11" fill="#7e5109" font-weight="700">tanh(c_t)</text>
+          <line x1="223" y1="50" x2="223" y2="78" stroke="#b45309" stroke-width="2.2" marker-end="url(#mkO)"/>
+          <!-- o valve -->
+          <rect x="40" y="150" width="150" height="52" rx="9" fill="#fdf0ee" stroke="#c0392b" stroke-width="2"/>
+          <text x="115" y="171" text-anchor="middle" font-size="10" fill="#c0392b">&sigma;(w_xo&middot;x_t + w_ho&middot;h_{t-1} + b_o)</text>
+          <text x="115" y="190" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="700">o_t &nbsp;(voice)</text>
+          <!-- multiply -->
+          <circle cx="290" cy="170" r="16" fill="#fff" stroke="#0e7490" stroke-width="2.5"/>
+          <text x="290" y="176" text-anchor="middle" font-size="14" fill="#0e7490" font-weight="700">&times;</text>
+          <line x1="190" y1="176" x2="272" y2="172" stroke="#c0392b" stroke-width="2.2" marker-end="url(#mkO)"/>
+          <line x1="240" y1="124" x2="278" y2="158" stroke="#b45309" stroke-width="2.2" marker-end="url(#mkO)"/>
+          <!-- h out -->
+          <rect x="340" y="146" width="104" height="48" rx="9" fill="#e0f2fe" stroke="#0e7490" stroke-width="2"/>
+          <text x="392" y="166" text-anchor="middle" font-size="12" fill="#0e7490" font-weight="700">h_t</text>
+          <text x="392" y="184" text-anchor="middle" font-size="9.5" fill="#0e7490">prediction AND next step&rsquo;s note</text>
+          <line x1="306" y1="170" x2="338" y2="170" stroke="#0e7490" stroke-width="2.4" marker-end="url(#mkO)"/>
+        </svg>
+      </div>
+      <div>
+        <p><strong>Analogy:</strong> a courtroom witness who knows the whole case file (\(c_t\)) but answers only the question actually asked. \( o_t \) is the discipline between what is <em>known</em> and what is <em>said</em>. Some days the file is rich but barely relevant &mdash; speak softly (\(o_t\) small). Other days one page of it is the whole answer &mdash; open up (\(o_t \to 1\)).</p>
+      </div>
+    </div>
+
+    <div class="win p-4 mt-4 rounded-r-lg">
+      <p><strong>Which failure this solves:</strong> the <em>relevance</em> half of Attempt #2&rsquo;s problem. A short-term-only memory was forced to make its stored past and its current answer the same thing. Splitting &ldquo;stored&rdquo; (\(c_t\)) from &ldquo;spoken&rdquo; (\(h_t\)) means the machine can carry information for many steps <em>without</em> polluting every intermediate prediction with it &mdash; storage and speech get separate controls.</p>
+    </div>
+  </div>
+</section>
+<!-- ══════════════ SECTION 6 ══════════════ -->
+<section id="s6">
+  <h2 class="text-3xl font-bold text-[#3f2a1d] border-b-2 border-[#EDE4D9] pb-2">6 &middot; The Complete Cell &mdash; Everything We Built, in One Machine</h2>
+
+  <p class="mt-5">Time to assemble. Every piece below is something we invented at this table for a specific reason: the amber belt on top is the protected ledger, the three sigmoid valves and one tanh proposal sit underneath it, and the bottom rail carries the two ingredients (\(x_t\) and \(h_{t-1}\)) that feed every weighted sum.</p>
+
+  <div class="card p-4 mt-4 overflow-x-auto">
+    <svg viewBox="0 0 980 560" class="w-full" style="min-width:760px">
+      <defs>
+        <marker id="mC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"/></marker>
+        <marker id="mF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#1e8449" stroke-width="2" stroke-linecap="round"/></marker>
+        <marker id="mI" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#2c5f8a" stroke-width="2" stroke-linecap="round"/></marker>
+        <marker id="mG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round"/></marker>
+        <marker id="mO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round"/></marker>
+        <marker id="mH" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#0e7490" stroke-width="2" stroke-linecap="round"/></marker>
+        <marker id="mY" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#d4ac0d" stroke-width="2" stroke-linecap="round"/></marker>
+      </defs>
+
+      <text x="490" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#3f2a1d">THE LSTM CELL &mdash; time step t</text>
+
+      <!-- cell wall -->
+      <rect x="118" y="46" width="724" height="428" rx="18" fill="#fff" stroke="#d4ccc0" stroke-width="2"/>
+
+      <!-- ═ cell state belt ═ -->
+      <line x1="20" y1="96" x2="196" y2="96" stroke="#b45309" stroke-width="4" marker-end="url(#mC)"/>
+      <line x1="228" y1="96" x2="452" y2="96" stroke="#b45309" stroke-width="4" marker-end="url(#mC)"/>
+      <line x1="484" y1="96" x2="960" y2="96" stroke="#b45309" stroke-width="4" marker-end="url(#mC)"/>
+      <rect x="12" y="72" width="86" height="46" rx="8" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+      <text x="55" y="91" text-anchor="middle" font-size="11" fill="#7e5109">old ledger</text>
+      <text x="55" y="108" text-anchor="middle" font-size="12" fill="#7e5109" font-weight="700">c_{t-1}</text>
+      <rect x="884" y="72" width="86" height="46" rx="8" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+      <text x="927" y="91" text-anchor="middle" font-size="11" fill="#7e5109">new ledger</text>
+      <text x="927" y="108" text-anchor="middle" font-size="12" fill="#7e5109" font-weight="700">c_t</text>
+      <text x="330" y="80" text-anchor="middle" font-size="10.5" fill="#b45309" font-style="italic">the conveyor belt &mdash; only &times; and + may touch it</text>
+
+      <!-- × forget node -->
+      <circle cx="212" cy="96" r="17" fill="#fff" stroke="#b45309" stroke-width="2.5"/>
+      <text x="212" y="102" text-anchor="middle" font-size="15" fill="#b45309" font-weight="700">&times;</text>
+      <!-- + input node -->
+      <circle cx="468" cy="96" r="17" fill="#fff" stroke="#b45309" stroke-width="2.5"/>
+      <text x="468" y="102" text-anchor="middle" font-size="16" fill="#b45309" font-weight="700">+</text>
+
+      <!-- ═ forget gate block ═ -->
+      <rect x="148" y="210" width="140" height="96" rx="10" fill="#eafaf1" stroke="#1e8449" stroke-width="2.5"/>
+      <text x="218" y="232" text-anchor="middle" font-size="12" fill="#1e8449" font-weight="700">FORGET f_t</text>
+      <text x="218" y="252" text-anchor="middle" font-size="10" fill="#1e8449">net_f = w_xf&middot;x_t</text>
+      <text x="218" y="267" text-anchor="middle" font-size="10" fill="#1e8449">+ w_hf&middot;h_{t-1} + b_f</text>
+      <text x="218" y="288" text-anchor="middle" font-size="11" fill="#1e8449" font-weight="700">f_t = &sigma;(net_f)</text>
+      <line x1="218" y1="210" x2="213" y2="116" stroke="#1e8449" stroke-width="2.4" marker-end="url(#mF)"/>
+      <text x="238" y="160" font-size="10.5" fill="#1e8449" font-weight="700">f_t &middot; c_{t-1}</text>
+
+      <!-- ═ input gate block ═ -->
+      <rect x="330" y="210" width="140" height="96" rx="10" fill="#e8f1f8" stroke="#2c5f8a" stroke-width="2.5"/>
+      <text x="400" y="232" text-anchor="middle" font-size="12" fill="#2c5f8a" font-weight="700">INPUT i_t</text>
+      <text x="400" y="252" text-anchor="middle" font-size="10" fill="#2c5f8a">net_i = w_xi&middot;x_t</text>
+      <text x="400" y="267" text-anchor="middle" font-size="10" fill="#2c5f8a">+ w_hi&middot;h_{t-1} + b_i</text>
+      <text x="400" y="288" text-anchor="middle" font-size="11" fill="#2c5f8a" font-weight="700">i_t = &sigma;(net_i)</text>
+
+      <!-- ═ candidate block ═ -->
+      <rect x="330" y="330" width="140" height="96" rx="10" fill="#f5eaf8" stroke="#7b2d8b" stroke-width="2.5"/>
+      <text x="400" y="352" text-anchor="middle" font-size="12" fill="#7b2d8b" font-weight="700">CANDIDATE g_t</text>
+      <text x="400" y="372" text-anchor="middle" font-size="10" fill="#7b2d8b">net_g = w_xg&middot;x_t</text>
+      <text x="400" y="387" text-anchor="middle" font-size="10" fill="#7b2d8b">+ w_hg&middot;h_{t-1} + b_g</text>
+      <text x="400" y="408" text-anchor="middle" font-size="11" fill="#7b2d8b" font-weight="700">g_t = tanh(net_g)</text>
+
+      <!-- × write node -->
+      <circle cx="522" cy="300" r="16" fill="#fff" stroke="#b45309" stroke-width="2.5"/>
+      <text x="522" y="306" text-anchor="middle" font-size="14" fill="#b45309" font-weight="700">&times;</text>
+      <line x1="470" y1="258" x2="508" y2="290" stroke="#2c5f8a" stroke-width="2.2" marker-end="url(#mI)"/>
+      <line x1="470" y1="378" x2="508" y2="311" stroke="#7b2d8b" stroke-width="2.2" marker-end="url(#mG)"/>
+      <line x1="518" y1="284" x2="472" y2="114" stroke="#b45309" stroke-width="2.4" marker-end="url(#mC)"/>
+      <text x="540" y="196" font-size="10.5" fill="#b45309" font-weight="700">i_t &middot; g_t</text>
+
+      <!-- ═ output gate block ═ -->
+      <rect x="620" y="210" width="140" height="96" rx="10" fill="#fdf0ee" stroke="#c0392b" stroke-width="2.5"/>
+      <text x="690" y="232" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="700">OUTPUT o_t</text>
+      <text x="690" y="252" text-anchor="middle" font-size="10" fill="#c0392b">net_o = w_xo&middot;x_t</text>
+      <text x="690" y="267" text-anchor="middle" font-size="10" fill="#c0392b">+ w_ho&middot;h_{t-1} + b_o</text>
+      <text x="690" y="288" text-anchor="middle" font-size="11" fill="#c0392b" font-weight="700">o_t = &sigma;(net_o)</text>
+
+      <!-- tanh(c_t) tap -->
+      <rect x="778" y="210" width="94" height="52" rx="9" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+      <text x="825" y="240" text-anchor="middle" font-size="11.5" fill="#7e5109" font-weight="700">tanh(c_t)</text>
+      <line x1="825" y1="96" x2="825" y2="208" stroke="#b45309" stroke-width="2.2" marker-end="url(#mC)"/>
+
+      <!-- × output node -->
+      <circle cx="800" cy="330" r="16" fill="#fff" stroke="#0e7490" stroke-width="2.5"/>
+      <text x="800" y="336" text-anchor="middle" font-size="14" fill="#0e7490" font-weight="700">&times;</text>
+      <line x1="760" y1="278" x2="787" y2="318" stroke="#c0392b" stroke-width="2.2" marker-end="url(#mO)"/>
+      <line x1="822" y1="262" x2="806" y2="314" stroke="#b45309" stroke-width="2.2" marker-end="url(#mC)"/>
+
+      <!-- h_t out -->
+      <rect x="862" y="356" width="104" height="52" rx="9" fill="#e0f2fe" stroke="#0e7490" stroke-width="2.5"/>
+      <text x="914" y="378" text-anchor="middle" font-size="12" fill="#0e7490" font-weight="700">h_t = o_t&middot;tanh(c_t)</text>
+      <text x="914" y="396" text-anchor="middle" font-size="9.5" fill="#0e7490">prediction &amp; next note</text>
+      <line x1="812" y1="342" x2="860" y2="372" stroke="#0e7490" stroke-width="2.4" marker-end="url(#mH)"/>
+
+      <!-- ═ bottom rail: h_{t-1} and x_t feeding all four ═ -->
+      <rect x="12" y="486" width="96" height="48" rx="9" fill="#fcf3cf" stroke="#d4ac0d" stroke-width="2"/>
+      <text x="60" y="506" text-anchor="middle" font-size="11" fill="#9a7d0a">working note</text>
+      <text x="60" y="523" text-anchor="middle" font-size="12" fill="#9a7d0a" font-weight="700">h_{t-1}</text>
+      <rect x="440" y="500" width="86" height="48" rx="9" fill="#d5f5e3" stroke="#27ae60" stroke-width="2"/>
+      <text x="483" y="520" text-anchor="middle" font-size="11" fill="#1e5e33">input</text>
+      <text x="483" y="537" text-anchor="middle" font-size="12" fill="#1e5e33" font-weight="700">x_t</text>
+
+      <line x1="108" y1="510" x2="940" y2="510" stroke="#d4ac0d" stroke-width="2" stroke-dasharray="6,4"/>
+      <text x="700" y="502" font-size="9.5" fill="#9a7d0a" font-style="italic">h_{t-1} feeds every weighted sum</text>
+      <line x1="190" y1="510" x2="204" y2="308" stroke="#d4ac0d" stroke-width="1.8" marker-end="url(#mY)"/>
+      <line x1="372" y1="510" x2="386" y2="308" stroke="#d4ac0d" stroke-width="1.8" marker-end="url(#mY)"/>
+      <line x1="360" y1="510" x2="378" y2="428" stroke="#d4ac0d" stroke-width="1.8" marker-end="url(#mY)"/>
+      <line x1="662" y1="510" x2="676" y2="308" stroke="#d4ac0d" stroke-width="1.8" marker-end="url(#mY)"/>
+
+      <line x1="483" y1="500" x2="483" y2="464" stroke="#27ae60" stroke-width="2" stroke-dasharray="6,4"/>
+      <line x1="483" y1="464" x2="150" y2="464" stroke="#27ae60" stroke-width="2" stroke-dasharray="6,4"/>
+      <line x1="483" y1="464" x2="940" y2="464" stroke="#27ae60" stroke-width="2" stroke-dasharray="6,4"/>
+      <text x="770" y="456" font-size="9.5" fill="#1e5e33" font-style="italic">x_t feeds every weighted sum</text>
+      <line x1="232" y1="464" x2="242" y2="308" stroke="#27ae60" stroke-width="1.8" marker-end="url(#mF)"/>
+      <line x1="414" y1="464" x2="424" y2="308" stroke="#27ae60" stroke-width="1.8" marker-end="url(#mF)"/>
+      <line x1="426" y1="464" x2="432" y2="428" stroke="#27ae60" stroke-width="1.8" marker-end="url(#mF)"/>
+      <line x1="704" y1="464" x2="714" y2="308" stroke="#27ae60" stroke-width="1.8" marker-end="url(#mF)"/>
+    </svg>
+    <p class="text-center text-sm italic text-[#7a6050] mt-2">The complete cell. Amber: the protected ledger and its two permitted operations (&times; at the forget node, + at the write node). Green / blue / purple / red: the four learned blocks, each a weighted sum of the same two ingredients with its own weights.</p>
+  </div>
+
+  <h3 class="text-xl font-bold text-[#b45309] mt-8">The highway, unrolled across time</h3>
+  <p class="mt-3">Now zoom out. Chain the cell across four time steps and watch the amber line: it runs straight through every step, touched only by a multiply and an add each time. That unbroken line is what lets December&rsquo;s clue survive to next December.</p>
+
+  <div class="card p-4 mt-3 overflow-x-auto">
+    <svg viewBox="0 0 960 240" class="w-full" style="min-width:700px">
+      <defs><marker id="mU" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"/></marker>
+      <marker id="mU2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#0e7490" stroke-width="2" stroke-linecap="round"/></marker></defs>
+      <text x="480" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#3f2a1d">Unrolled: the cell-state highway persists across steps</text>
+      <!-- highway -->
+      <line x1="16" y1="80" x2="944" y2="80" stroke="#b45309" stroke-width="5" marker-end="url(#mU)"/>
+      <text x="30" y="66" font-size="11" fill="#7e5109" font-weight="700">c_{t-2}</text>
+      <text x="262" y="66" font-size="11" fill="#7e5109" font-weight="700">c_{t-1}</text>
+      <text x="494" y="66" font-size="11" fill="#7e5109" font-weight="700">c_t</text>
+      <text x="726" y="66" font-size="11" fill="#7e5109" font-weight="700">c_{t+1}</text>
+      <!-- cells -->
+      <g>
+        <rect x="80" y="104" width="150" height="86" rx="12" fill="#fff" stroke="#d4ccc0" stroke-width="2"/>
+        <text x="155" y="140" text-anchor="middle" font-size="11" fill="#5c4630" font-weight="700">LSTM cell</text>
+        <text x="155" y="158" text-anchor="middle" font-size="10" fill="#8a7f70">step t-1</text>
+        <rect x="312" y="104" width="150" height="86" rx="12" fill="#fff" stroke="#d4ccc0" stroke-width="2"/>
+        <text x="387" y="140" text-anchor="middle" font-size="11" fill="#5c4630" font-weight="700">LSTM cell</text>
+        <text x="387" y="158" text-anchor="middle" font-size="10" fill="#8a7f70">step t</text>
+        <rect x="544" y="104" width="150" height="86" rx="12" fill="#fff" stroke="#d4ccc0" stroke-width="2"/>
+        <text x="619" y="140" text-anchor="middle" font-size="11" fill="#5c4630" font-weight="700">LSTM cell</text>
+        <text x="619" y="158" text-anchor="middle" font-size="10" fill="#8a7f70">step t+1</text>
+        <rect x="776" y="104" width="150" height="86" rx="12" fill="#fff" stroke="#d4ccc0" stroke-width="2"/>
+        <text x="851" y="140" text-anchor="middle" font-size="11" fill="#5c4630" font-weight="700">LSTM cell</text>
+        <text x="851" y="158" text-anchor="middle" font-size="10" fill="#8a7f70">step t+2</text>
+      </g>
+      <!-- taps up/down -->
+      <g stroke="#b45309" stroke-width="2">
+        <line x1="130" y1="104" x2="130" y2="82"/><line x1="180" y1="82" x2="180" y2="104"/>
+        <line x1="362" y1="104" x2="362" y2="82"/><line x1="412" y1="82" x2="412" y2="104"/>
+        <line x1="594" y1="104" x2="594" y2="82"/><line x1="644" y1="82" x2="644" y2="104"/>
+        <line x1="826" y1="104" x2="826" y2="82"/><line x1="876" y1="82" x2="876" y2="104"/>
+      </g>
+      <!-- h chain -->
+      <g stroke="#0e7490" stroke-width="2">
+        <line x1="230" y1="150" x2="310" y2="150" marker-end="url(#mU2)"/>
+        <line x1="462" y1="150" x2="542" y2="150" marker-end="url(#mU2)"/>
+        <line x1="694" y1="150" x2="774" y2="150" marker-end="url(#mU2)"/>
+      </g>
+      <text x="270" y="142" font-size="10" fill="#0e7490">h_{t-1}</text>
+      <text x="502" y="142" font-size="10" fill="#0e7490">h_t</text>
+      <text x="734" y="142" font-size="10" fill="#0e7490">h_{t+1}</text>
+      <text x="480" y="222" text-anchor="middle" font-size="10.5" fill="#7a6050" font-style="italic">Each cell dips into the highway (&times; then +) and passes it on. The teal h-chain below is the working note, refreshed every step.</text>
+    </svg>
+  </div>
+
+  <div class="gv card p-4 mt-4">
+    <p class="font-bold text-[#5c4630] mb-2">Legend &mdash; the naming convention (identical to the backprop document)</p>
+    <p class="text-sm">Every weight is \( w_{\square\triangle} \): the first subscript letter says <em>what it multiplies</em> (\(x\) = today&rsquo;s input, \(h\) = yesterday&rsquo;s note), the second says <em>which block it belongs to</em> (\(f\) forget, \(i\) input, \(g\) candidate, \(o\) output). Each block also has a bias \(b_\square\) and a raw score \( \text{net}_\square \). When we pin a computation to a specific time step, the whole name gets a time subscript: \( w_{xo_{t-1}} \) is the output gate&rsquo;s input-weight <em>as used at step t&minus;1</em>.</p>
+  </div>
+</section>
+
+<!-- ══════════════ SECTION 7 ══════════════ -->
+<section id="s7">
+  <h2 class="text-3xl font-bold text-[#3f2a1d] border-b-2 border-[#EDE4D9] pb-2">7 &middot; The Numbers &mdash; One Real Forward Pass</h2>
+
+  <p class="mt-5">Talk is cheap; let&rsquo;s push one actual number through the machine. We use the exact values from the companion backprop document so the two references line up digit for digit. The situation: a fresh start (\( h_{t-2} = 0 \), \( c_{t-2} = 0 \)), one input \( x_{t-1} = 0.5 \), and a known correct answer, target \(= 0.8\).</p>
+
+  <div class="gv card p-4 mt-3">
+    <p class="font-bold text-[#5c4630] mb-1">The twelve parameters (as used at step t&minus;1)</p>
+    <p class="text-sm">
+      Forget: \( w_{xf_{t-1}}=0.5,\; w_{hf_{t-1}}=0.4,\; b_{f_{t-1}}=0.1 \) &nbsp;|&nbsp;
+      Input: \( w_{xi_{t-1}}=0.3,\; w_{hi_{t-1}}=0.6,\; b_{i_{t-1}}=-0.2 \) &nbsp;|&nbsp;
+      Candidate: \( w_{xg_{t-1}}=0.7,\; w_{hg_{t-1}}=0.2,\; b_{g_{t-1}}=0.3 \) &nbsp;|&nbsp;
+      Output: \( w_{xo_{t-1}}=0.4,\; w_{ho_{t-1}}=0.5,\; b_{o_{t-1}}=-0.1 \)
+    </p>
+  </div>
+
+  <h3 class="text-lg font-bold text-[#5c4630] mt-6">First: what would our two failed predictors say?</h3>
+  <div class="grid md:grid-cols-2 gap-4 mt-3">
+    <div class="card p-4"><p class="font-bold text-[#1e8449] text-sm">Long-term only (cumulative mean)</p>
+      <p class="text-sm mt-1">With one observation, its guess is stuck at the average of what it has seen &mdash; and it has <em>no mechanism</em> to weight today more than any ancient day. Fine now; hopeless the moment the world shifts.</p></div>
+    <div class="card p-4"><p class="font-bold text-[#c0392b] text-sm">Short-term only (last value)</p>
+      <p class="text-sm mt-1">Its guess is just \( x_{t-1} = 0.5 \) &mdash; and it will still be &ldquo;whatever happened most recently&rdquo; forever, with no way to carry a season-old clue toward the 0.8 target.</p></div>
+  </div>
+  <p class="mt-3 text-sm text-[#7a6050]">The LSTM starts with the same information &mdash; but every judgement below is made by <em>learnable</em> valves, so training can push each one toward whatever this data needs.</p>
+
+  <h3 class="text-lg font-bold" style="color:var(--forget)">Step 1 &mdash; Forget gate</h3>
+  <div class="scaffold p-4 mt-2">
+    <div class="scaffold-label mb-2">Raw score, then squash</div>
+    \[ \text{net}_f = w_{xf_{t-1}}\,x_{t-1} + w_{hf_{t-1}}\,h_{t-2} + b_{f_{t-1}} = (0.5)(0.5) + (0.4)(0) + 0.1 = \mathbf{0.35} \]
+    \[ f_{t-1} = \sigma(0.35) = \frac{1}{1+e^{-0.35}} = \mathbf{0.5866} \]
+    <p class="mt-2 text-sm">The valve is 58.66% open. It scales the old ledger: \( f_{t-1} \cdot c_{t-2} = 0.5866 \times 0 = 0 \) &mdash; nothing to keep yet, and the gate handles that gracefully.</p>
+  </div>
+
+  <h3 class="text-lg font-bold mt-5" style="color:var(--input)">Step 2 &mdash; Input gate and candidate</h3>
+  <div class="scaffold p-4 mt-2">
+    <div class="scaffold-label mb-2">Two blocks, same recipe, different weights</div>
+    \[ \text{net}_i = (0.3)(0.5) + (0.6)(0) + (-0.2) = \mathbf{-0.05} \qquad i_{t-1} = \sigma(-0.05) = \mathbf{0.4875} \]
+    \[ \text{net}_g = (0.7)(0.5) + (0.2)(0) + 0.3 = \mathbf{0.65} \qquad g_{t-1} = \tanh(0.65) = \mathbf{0.5717} \]
+    <p class="mt-2 text-sm">The candidate proposes +0.5717; the editor trusts 48.75% of it. The write is \( i_{t-1} \cdot g_{t-1} = 0.4875 \times 0.5717 = \mathbf{0.2787} \).</p>
+  </div>
+
+  <h3 class="text-lg font-bold mt-5" style="color:var(--cell)">Step 3 &mdash; Update the ledger</h3>
+  <div class="scaffold p-4 mt-2">
+    <div class="scaffold-label mb-2">Keep + add</div>
+    \[ c_{t-1} = f_{t-1}\cdot c_{t-2} + i_{t-1}\cdot g_{t-1} = 0 + 0.2787 = \mathbf{0.2787} \]
+  </div>
+
+  <h3 class="text-lg font-bold mt-5" style="color:var(--out)">Step 4 &mdash; Output gate, and speak</h3>
+  <div class="scaffold p-4 mt-2">
+    <div class="scaffold-label mb-2">Valve, tap, multiply</div>
+    \[ \text{net}_o = w_{xo_{t-1}}\,x_{t-1} + w_{ho_{t-1}}\,h_{t-2} + b_{o_{t-1}} = (0.4)(0.5) + (0.5)(0) + (-0.1) = \mathbf{0.1} \]
+    \[ o_{t-1} = \sigma(0.1) = \mathbf{0.5250} \qquad \tanh(c_{t-1}) = \tanh(0.2787) = \mathbf{0.2717} \]
+    \[ h_{t-1} = o_{t-1}\cdot\tanh(c_{t-1}) = 0.5250 \times 0.2717 = \mathbf{0.1426} \]
+  </div>
+
+  <h3 class="text-lg font-bold mt-5 text-[#3f2a1d]">Step 5 &mdash; How wrong were we?</h3>
+  <div class="scaffold p-4 mt-2">
+    <div class="scaffold-label mb-2">Plain English, then the loss</div>
+    <p class="text-sm">We want a single number measuring how far the spoken answer (0.1426) landed from the truth (0.8). Take the difference and square it &mdash; squaring makes the number positive either way and punishes big misses more than small ones:</p>
+    \[ L = (\text{target} - h_{t-1})^2 = (0.8 - 0.1426)^2 = \mathbf{0.4321} \]
+  </div>
+
+  <div class="aside p-4 mt-5 rounded-r-lg">
+    <p><strong>Where the story continues:</strong> a loss of 0.4321 is the starting gun for learning. The full gradient calculation for \( w_{xo_{t-1}} \) &mdash; the exact path with its four derivatives, \( (-1.3147)(0.2717)(0.2494)(0.5) = -0.0445 \), and the update \( 0.4 \to 0.4045 \) &mdash; is worked step-by-step in the companion backpropagation document, with the same numbers and the same names you just used here.</p>
+  </div>
+</section>
+
+<!-- ══════════════ SECTION 8 ══════════════ -->
+<section id="s8">
+  <h2 class="text-3xl font-bold text-[#3f2a1d] border-b-2 border-[#EDE4D9] pb-2">8 &middot; The History &mdash; We Were Not the First at This Table</h2>
+
+  <p class="mt-5">Here is the satisfying part: the path we just walked &mdash; naive memory, opposite failures, protected belt, learned valves &mdash; is essentially the path the field walked in real life, just slower and with more pain.</p>
+
+  <p class="mt-3">Through the late 1980s and early 1990s, researchers trained recurrent networks shaped like our first recurrence: one memory, re-weighted and squashed at every step. And they kept hitting the same wall. When training tried to send its error signal backward through time, that signal passed through every step&rsquo;s weights and squashing functions &mdash; getting multiplied by a factor at each hop. A factor slightly below 1, compounded over 50 steps, is essentially zero: the <strong>vanishing gradient</strong>. Slightly above 1, and it blows up instead: the <strong>exploding gradient</strong>. Either way, the network could not learn that something 50 steps ago mattered &mdash; the message from the future never survived the trip back. Sepp Hochreiter had analyzed this precisely in his 1991 thesis; it was the central obstacle of the field.</p>
+
+  <p class="mt-3">The people who first solved it &mdash; Hochreiter and J&uuml;rgen Schmidhuber, in their 1997 paper introducing <em>Long Short-Term Memory</em> &mdash; realized the fix had to be architectural. Their idea was the very belt we drew in Section 5.0: a cell state whose step-to-step self-connection is fixed at 1, so the error signal riding backward along it is multiplied by 1 at every hop &mdash; neither shrinking nor exploding, circling as long as needed. They called this the <strong>constant error carousel</strong>, and it is the reason our sacred rule (&ldquo;only &times; and + may touch the belt&rdquo;) exists. The gates came with it: input and output gates in the original design to control the carousel&rsquo;s traffic, with the forget gate added shortly after (Gers, Schmidhuber &amp; Cummins, 1999) when it became clear the carousel also needed a drain &mdash; our whiteboard insight #1, discovered in production.</p>
+
+  <p class="mt-3">So every oddity of the architecture is a scar from a specific old wound: the untouched belt exists because gradients used to vanish; the gates exist because an untouched belt is useless without controlled traffic; the forget gate exists because eternal memory turned out to be a bug, not a feature. Nothing in the LSTM is decoration.</p>
+</section>
+
+<!-- ══════════════ SECTION 9 ══════════════ -->
+<section id="s9">
+  <h2 class="text-3xl font-bold text-[#3f2a1d] border-b-2 border-[#EDE4D9] pb-2">9 &middot; Takeaways &mdash; The Mental Model to Keep</h2>
+
+  <div class="grid md:grid-cols-2 gap-4 mt-5">
+    <div class="card gate-f p-4">
+      <p class="font-bold" style="color:var(--forget)">Forget gate &nbsp; \( f_t = \sigma(\text{net}_f) \)</p>
+      <p class="text-sm mt-2"><strong>Solves:</strong> Attempt #1 &mdash; the soup pot with no drain. One learned multiply can erase any amount of stale ledger the moment the world changes.</p>
+    </div>
+    <div class="card gate-i p-4">
+      <p class="font-bold" style="color:var(--input)">Input gate + candidate &nbsp; \( i_t \cdot g_t \)</p>
+      <p class="text-sm mt-2"><strong>Solves:</strong> Attempt #2&rsquo;s indiscriminate writing. Content (\(g_t\), signed, bounded) times trust (\(i_t\)) means the ledger stores by <em>importance</em>, not by age.</p>
+    </div>
+    <div class="card gate-o p-4">
+      <p class="font-bold" style="color:var(--out)">Output gate &nbsp; \( h_t = o_t\cdot\tanh(c_t) \)</p>
+      <p class="text-sm mt-2"><strong>Solves:</strong> the relevance problem. Knowing and saying get separate controls &mdash; carry a clue silently for months, voice it only when it matters.</p>
+    </div>
+    <div class="card p-4" style="border-top:6px solid var(--cell)">
+      <p class="font-bold" style="color:var(--cell)">Cell state belt &nbsp; \( c_t = f_t c_{t-1} + i_t g_t \)</p>
+      <p class="text-sm mt-2"><strong>Solves:</strong> vanishing gradients. Only &times; and + touch the belt, so the error signal can ride it backward across many steps &mdash; the constant error carousel.</p>
+    </div>
+  </div>
+
+  <div class="win p-5 mt-6 rounded-r-lg">
+    <p><strong>The one-sentence mental model:</strong> an LSTM is a protected ledger on a conveyor belt, with three learned valves &mdash; a drain (\(f_t\)), a pen with an editor (\(i_t \cdot g_t\)), and a voice (\(o_t\)) &mdash; each one a tiny neuron reading today&rsquo;s input and yesterday&rsquo;s note.</p>
+    <p class="mt-3">You built every part of it at this table by fixing one concrete failure at a time. And because this document and the backpropagation companion share identical names &mdash; every \( w_{xo_{t-1}} \), every \( \text{net}_f \), every \( b_{i} \) &mdash; you can now move seamlessly between <em>why the gates exist</em> (here) and <em>how the gradients flow</em> (there). That pairing is the whole game: intuition first, then the calculus lands on ground that is already familiar.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="border-t border-[#d4ccc0] py-8 text-center text-sm text-[#8a7f70]">
+  <p>&ldquo;How We Invented the LSTM at the Kitchen Table&rdquo; &mdash; companion to the backpropagation walkthrough. Identical weight naming throughout: \( w_{xf}, w_{hf}, b_f \mid w_{xi}, w_{hi}, b_i \mid w_{xg}, w_{hg}, b_g \mid w_{xo}, w_{ho}, b_o \).</p>
+</footer>
+
+<script>
+// ───────── shared data generation ─────────
+function noise(i){ const s = Math.sin(i*12.9898)*43758.5453; return (s - Math.floor(s)) - 0.5; }
+const N = 100, REGIME = 60;
+const labels = [], raw = [];
+for(let i=0;i<N;i++){
+  labels.push(i);
+  let v;
+  if(i < REGIME){ v = 20 + 0.18*i + 5*Math.sin(2*Math.PI*i/12) + 1.6*noise(i); }
+  else{ v = 20 + 0.18*REGIME - 20 + 0.05*(i-REGIME) + 5*Math.sin(2*Math.PI*i/12) + 1.6*noise(i); }
+  raw.push(v);
+}
+// cumulative mean
+const cum = []; let s = 0;
+for(let i=0;i<N;i++){ s += raw[i]; cum.push(s/(i+1)); }
+// window-3 moving average
+const win = [];
+for(let i=0;i<N;i++){
+  const a = raw[Math.max(0,i-2)], b = raw[Math.max(0,i-1)], c = raw[i];
+  win.push((a+b+c)/3);
+}
+
+const gray = "#9a9084", green = "#1e8449", red = "#c0392b";
+const baseOpts = {
+  responsive:true, animation:false,
+  plugins:{ legend:{ labels:{ font:{ size:11 } } } },
+  scales:{ x:{ title:{display:true,text:"month"}, ticks:{ maxTicksLimit:12, font:{size:10} } },
+           y:{ ticks:{ font:{size:10} } } },
+  elements:{ point:{ radius:0 } }
+};
+function rawDataset(){
+  return { label:"the data", data:raw, borderColor:gray, borderWidth:2,
+    segment:{ borderColor: ctx => ctx.p0DataIndex >= REGIME-1 ? "#5c4630" : gray } };
+}
+
+new Chart(document.getElementById("chartMain"), { type:"line",
+  data:{ labels, datasets:[ rawDataset() ] },
+  options: baseOpts });
+
+new Chart(document.getElementById("chartCum"), { type:"line",
+  data:{ labels, datasets:[ rawDataset(),
+    { label:"cumulative mean (long-term only)", data:cum, borderColor:green, borderWidth:2.5 } ] },
+  options: baseOpts });
+
+new Chart(document.getElementById("chartWin"), { type:"line",
+  data:{ labels, datasets:[ rawDataset(),
+    { label:"3-month window (short-term only)", data:win, borderColor:red, borderWidth:2.5 } ] },
+  options: baseOpts });
+
+// ───────── KaTeX auto-render ─────────
+document.addEventListener("DOMContentLoaded", function(){
+  const tryRender = () => {
+    if(window.renderMathInElement){
+      renderMathInElement(document.body, {
+        delimiters:[ {left:"\\(", right:"\\)", display:false},
+                     {left:"\\[", right:"\\]", display:true} ],
+        throwOnError:false });
+    } else { setTimeout(tryRender, 120); }
+  };
+  tryRender();
+});
+</script>
+</body>
+</html>

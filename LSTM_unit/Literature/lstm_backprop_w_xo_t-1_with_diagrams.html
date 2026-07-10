@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSTM Backprop — single weight w_xo (t-1), with path diagrams</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+:root{--bg:#faf8f3;--text:#1f1a14;--accent:#8B5E3C;--light:#EDE4D9;--bdr:#d4ccc0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+ background:var(--bg);color:var(--text);line-height:1.75;max-width:900px;margin:40px auto;padding:0 24px;}
+h1{font-size:27px;font-weight:600;color:#3f2a1d;margin-bottom:6px;}
+h2{font-size:20px;font-weight:600;color:#3f2a1d;margin-top:38px;margin-bottom:10px;border-bottom:2px solid var(--light);padding-bottom:6px;}
+h3{font-size:16px;font-weight:600;color:var(--accent);margin-top:24px;margin-bottom:7px;}
+.sub{font-size:15px;color:#7a7060;margin-bottom:28px;}
+p{margin-bottom:11px;}
+.intro{background:white;border:1px solid var(--bdr);border-radius:10px;padding:20px 24px;margin-bottom:26px;}
+.gv{background:#f5f1e9;border:1px solid var(--bdr);border-radius:10px;padding:16px 20px;margin:18px 0;}
+.gv h3{margin-top:0;color:#5c4630;}
+.gv ul{margin:10px 0 0;padding-left:20px;} .gv li{margin:6px 0;font-size:15px;}
+.eq{background:white;border:1px solid var(--bdr);border-radius:8px;padding:13px 18px;margin:11px 0;overflow-x:auto;}
+.d{background:#f5eaf8;border:1px solid #c8a8e0;border-radius:8px;padding:13px 20px;margin:8px 0 13px;overflow-x:auto;}
+.dl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#7b2d8b;margin-bottom:7px;font-weight:600;}
+.res{background:#e8f0e3;border-left:4px solid #5a8f4d;padding:11px 16px;margin:14px 0;font-size:15px;}
+.int{background:#f9f5eb;border-left:4px solid #d4a017;padding:13px 17px;margin:16px 0;font-size:14.5px;}
+.nb{background:#eef4fb;border-left:4px solid #4a7fba;padding:13px 17px;margin:16px 0;font-size:14.5px;}
+.sh{border-radius:8px;padding:10px 18px;margin:32px 0 12px;font-size:17px;font-weight:600;color:white;background:#7b2d8b;}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;margin:14px 0;}
+.tbl th{background:#3f2a1d;color:white;padding:8px 12px;text-align:center;font-size:13px;}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--bdr);text-align:center;font-family:monospace;}
+.tbl tr:nth-child(even) td{background:#f5f1e9;}
+.diagcap{text-align:center;font-size:12.5px;color:#7a6050;font-style:italic;margin:4px 0 18px;}
+.footer{margin-top:54px;padding-top:18px;border-top:1px solid var(--bdr);font-size:12.5px;color:#8a7f70;text-align:center;}
+</style></head><body>
+
+<h1>LSTM Backpropagation &mdash; Updating a Single Weight \(w_{xo_{t\text{-}1}}\)</h1>
+<p class="sub">Same example as the forward pass. One weight, one path, one derivative per segment &mdash; with the path drawn at every step.</p>
+
+<div class="intro">
+<p><strong>About this document.</strong> Backpropagation updates every weight in the LSTM, but doing all twelve at once hides the core idea behind a wall of arithmetic. So here we follow <em>one</em> weight from start to finish: \(w_{xo_{t\text{-}1}}\), the input weight inside the output gate. Once this single path is clear, every other weight follows the exact same pattern.</p>
+<p><strong>The one idea to hold onto:</strong> during the forward pass, the weight&rsquo;s influence travelled along a specific path to reach the loss. Backpropagation walks that <em>same path in reverse</em>, and every segment of the path contributes exactly one derivative to the chain rule. The diagram below is the whole document in one picture &mdash; each step after it just zooms in on one red arrow.</p>
+</div>
+
+<div class="gv">
+<h3>Values carried over from the forward pass (t&minus;1)</h3>
+<ul>
+<li>\(x_{t\text{-}1} = 0.5\) &mdash; the input</li>
+<li>\(\text{net}_{o} = 0.1\) &mdash; the output gate&rsquo;s weighted sum</li>
+<li>\(o_{t\text{-}1} = \sigma(\text{net}_o) = 0.5250\) &mdash; the output gate value</li>
+<li>\(\tanh(c_{t\text{-}1}) = 0.2717\) &mdash; tanh of the new cell state</li>
+<li>\(h_{t\text{-}1} = o_{t\text{-}1}\cdot\tanh(c_{t\text{-}1}) = 0.1426\) &mdash; the network&rsquo;s output</li>
+<li>\(w_{xo_{t\text{-}1}} = 0.4\) &mdash; the weight we will update; learning rate \(\alpha = 0.1\)</li>
+<li>\(\text{target} = 0.8\), &nbsp; loss \(L = (\text{target} - h_{t\text{-}1})^2 = (0.8-0.1426)^2 = 0.4321\)</li>
+</ul>
+</div>
+
+<h2>The Whole Journey in One Picture</h2>
+
+<p>Read the purple row left to right &mdash; that is the forward pass: the weight is multiplied by the input to help form \(\text{net}_o\), the sigmoid turns \(\text{net}_o\) into the gate value \(o\), multiplying by \(\tanh(c)\) gives the output \(h\), and comparing \(h\) to the target gives the loss. The dashed boxes above are the <em>other</em> quantities that join the path along the way &mdash; each one will reappear as a number inside one of the derivatives.</p>
+
+<svg viewBox="0 0 940 470" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="m-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="m-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="m-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#8a7f70" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470" y="30" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#3f2a1d" font-weight="700">THE PATH FROM THE WEIGHT TO THE LOSS</text>
+<text x="470" y="50" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">forward pass runs left→right (purple) — backprop walks the same path right→left (red), one derivative per segment</text>
+<rect x="26.0" y="120.0" width="118" height="60" rx="9" fill="#d5f5e3" stroke="#1e8449" stroke-width="2"/>
+<text x="85" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1e8449" font-weight="normal">Input Weight</text>
+<text x="71" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1e8449" font-weight="700">w</text>
+<text x="87" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1e8449" font-weight="700">xo</text>
+<text x="85" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1e8449" font-weight="normal">= 0.4</text>
+<rect x="216.0" y="120.0" width="118" height="60" rx="9" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+<text x="275" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="normal">Weighted sum</text>
+<text x="261" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">net</text>
+<text x="283" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c0392b" font-weight="700">o</text>
+<text x="275" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="normal">= 0.1</text>
+<rect x="406.0" y="120.0" width="118" height="60" rx="9" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2"/>
+<text x="465" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1f5f8b" font-weight="normal">Output gate</text>
+<text x="451" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1f5f8b" font-weight="700">o</text>
+<text x="467" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1f5f8b" font-weight="700">t-1</text>
+<text x="465" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1f5f8b" font-weight="normal">= 0.5250</text>
+<rect x="596.0" y="120.0" width="118" height="60" rx="9" fill="#fce8f0" stroke="#c2185b" stroke-width="2"/>
+<text x="655" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c2185b" font-weight="normal">New Short-Term</text>
+<text x="641" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c2185b" font-weight="700">h</text>
+<text x="657" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c2185b" font-weight="700">t-1</text>
+<text x="655" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c2185b" font-weight="normal">= 0.1426</text>
+<rect x="786.0" y="120.0" width="118" height="60" rx="9" fill="#3f2a1d" stroke="#3f2a1d" stroke-width="2"/>
+<text x="845" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#fff" font-weight="normal">Loss</text>
+<text x="833" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff" font-weight="700">L</text>
+<text x="845" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#fff" font-weight="normal">= 0.4321</text>
+<line x1="148.0" y1="150" x2="212.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#m-f)"/>
+<text x="174.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× x</text>
+<text x="190.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<line x1="338.0" y1="150" x2="402.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#m-f)"/>
+<text x="370.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">σ( · )</text>
+<line x1="528.0" y1="150" x2="592.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#m-f)"/>
+<text x="552.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× tanh(c</text>
+<text x="594.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<text x="604.0" y="138" text-anchor="start" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">)</text>
+<line x1="718.0" y1="150" x2="782.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#m-f)"/>
+<text x="750.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">(target − ·)²</text>
+<rect x="120" y="58" width="92" height="40" rx="7" fill="#eafaf1" stroke="#1e8449" stroke-width="1.6"/>
+<text x="166" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1e8449" font-weight="normal">input</text>
+<text x="160" y="90" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#1e8449" font-weight="700">x</text>
+<text x="168" y="94" text-anchor="start" font-family="sans-serif" font-size="8" fill="#1e8449" font-weight="700">t-1</text>
+<line x1="180" y1="98" x2="180" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#m-g)"/>
+<rect x="510" y="58" width="112" height="40" rx="7" fill="#fef3c7" stroke="#b45309" stroke-width="1.6"/>
+<text x="566" y="75" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#7e5109" font-weight="normal">from cell state</text>
+<text x="566" y="91" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#7e5109" font-weight="700">tanh(c) = 0.2717</text>
+<line x1="566" y1="98" x2="566" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#m-g)"/>
+<rect x="706" y="58" width="92" height="40" rx="7" fill="#fdecea" stroke="#c0392b" stroke-width="1.6"/>
+<text x="752" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">target</text>
+<text x="752" y="91" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.8</text>
+<line x1="752" y1="98" x2="752" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#m-g)"/>
+<text x="275" y="196.0" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">w</text>
+<text x="283" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">ho</text>
+<text x="296" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">·h</text>
+<text x="310" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">t-2</text>
+<text x="326" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">+ b</text>
+<text x="343" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">o</text>
+<text x="355" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> also enter, but contain no w</text>
+<text x="490" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">xo</text>
+<text x="502" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> — their derivative is 0</text>
+<line x1="267" y1="265" x2="93" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#m-b)"/>
+<text x="180.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700">Step 4</text>
+<text x="180.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal">∂net/∂w = x</text>
+<text x="180.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.5</text>
+<line x1="85" y1="208.0" x2="85" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="457" y1="265" x2="283" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#m-b)"/>
+<text x="370.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700">Step 3</text>
+<text x="370.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal">∂o/∂net = o(1−o)</text>
+<text x="370.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.2494</text>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="647" y1="265" x2="473" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#m-b)"/>
+<text x="560.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700">Step 2</text>
+<text x="560.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal">∂h/∂o = tanh(c)</text>
+<text x="560.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.2717</text>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="837" y1="265" x2="663" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#m-b)"/>
+<text x="750.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700">Step 1</text>
+<text x="750.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal">∂L/∂h = −2(t−h)</text>
+<text x="750.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= −1.3147</text>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="845" y1="208.0" x2="845" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="120" y1="330" x2="820" y2="330" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="120" y1="330" x2="120" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="820" y1="330" x2="820" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<text x="470" y="355" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5c4630" font-weight="normal">multiply the four red segments together:</text>
+<text x="470" y="380" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">∂L/∂w = (−1.3147) × (0.2717) × (0.2494) × (0.5) = −0.0445</text>
+<text x="470" y="404" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">one forward segment  ↔  one backward derivative — the chain rule is just the path, walked in reverse</text>
+<text x="470" y="428" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1f1a14" font-weight="normal"></text>
+</svg>
+<p class="diagcap">The full gradient path. Each red arrow below the pipeline is one factor of the chain rule &mdash; the local derivative of the forward operation directly above it. Multiply the four red arrows together and you have \(\partial L / \partial w_{xo}\).</p>
+
+<div class="nb"><strong>Where does each part of the equation come from?</strong> Look at the pairing: every red arrow sits directly under one purple arrow. The purple arrow says what the forward pass <em>did</em> on that segment; the red arrow is that operation&rsquo;s derivative. &ldquo;Multiply by \(x\)&rdquo; differentiates to \(x\). &ldquo;Apply sigmoid&rdquo; differentiates to \(o(1-o)\). &ldquo;Multiply by \(\tanh(c)\)&rdquo; differentiates to \(\tanh(c)\). &ldquo;Square the difference from target&rdquo; differentiates to \(-2(\text{target}-h)\). Nothing in the chain rule is invented &mdash; every factor is the shadow of a forward operation.</div>
+
+<div class="eq">
+\[ \frac{\partial L}{\partial w_{xo_{t\text{-}1}}}
+   = \underbrace{\frac{\partial L}{\partial h_{t\text{-}1}}}_{\text{Step 1}}
+   \cdot \underbrace{\frac{\partial h_{t\text{-}1}}{\partial o_{t\text{-}1}}}_{\text{Step 2}}
+   \cdot \underbrace{\frac{\partial o_{t\text{-}1}}{\partial \text{net}_o}}_{\text{Step 3}}
+   \cdot \underbrace{\frac{\partial \text{net}_o}{\partial w_{xo_{t\text{-}1}}}}_{\text{Step 4}} \]
+</div>
+
+<div class="nb"><strong>Why no cell-state branch?</strong> Some weights (the forget and input-gate weights) reach the loss through <em>two</em> routes, because they change the cell state \(c_{t\text{-}1}\), which feeds both the output and the next time step. But \(w_{xo_{t\text{-}1}}\) lives in the output gate, which <em>reads</em> the cell state without ever changing it. Notice in the diagram that \(\tanh(c)\) enters the path from a dashed box <em>outside</em> it &mdash; the path never loops through the cell state. One clean route; that is exactly why we start here.</div>
+
+<p>We number the steps starting from the loss, because that is the direction backpropagation actually works: it begins with the error and walks toward the weight.</p>
+
+<!-- ─────────── STEP 1 ─────────── -->
+<div class="sh">Step 1 &mdash; The rightmost segment: \(\partial L / \partial h_{t\text{-}1}\)</div>
+
+<svg viewBox="0 0 940 470" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="s1-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="s1-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="s1-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#8a7f70" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470" y="30" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#3f2a1d" font-weight="700">THE PATH FROM THE WEIGHT TO THE LOSS</text>
+<text x="470" y="50" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">forward pass runs left→right (purple) — backprop walks the same path right→left (red), one derivative per segment</text>
+<rect x="26.0" y="120.0" width="118" height="60" rx="9" fill="#d5f5e3" stroke="#1e8449" stroke-width="2"/>
+<text x="85" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1e8449" font-weight="normal">Input Weight</text>
+<text x="71" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1e8449" font-weight="700">w</text>
+<text x="87" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1e8449" font-weight="700">xo</text>
+<text x="85" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1e8449" font-weight="normal">= 0.4</text>
+<rect x="216.0" y="120.0" width="118" height="60" rx="9" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+<text x="275" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="normal">Weighted sum</text>
+<text x="261" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">net</text>
+<text x="283" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c0392b" font-weight="700">o</text>
+<text x="275" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="normal">= 0.1</text>
+<rect x="406.0" y="120.0" width="118" height="60" rx="9" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2"/>
+<text x="465" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1f5f8b" font-weight="normal">Output gate</text>
+<text x="451" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1f5f8b" font-weight="700">o</text>
+<text x="467" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1f5f8b" font-weight="700">t-1</text>
+<text x="465" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1f5f8b" font-weight="normal">= 0.5250</text>
+<rect x="596.0" y="120.0" width="118" height="60" rx="9" fill="#fce8f0" stroke="#c2185b" stroke-width="2"/>
+<text x="655" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c2185b" font-weight="normal">New Short-Term</text>
+<text x="641" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c2185b" font-weight="700">h</text>
+<text x="657" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c2185b" font-weight="700">t-1</text>
+<text x="655" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c2185b" font-weight="normal">= 0.1426</text>
+<rect x="786.0" y="120.0" width="118" height="60" rx="9" fill="#3f2a1d" stroke="#3f2a1d" stroke-width="2"/>
+<text x="845" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#fff" font-weight="normal">Loss</text>
+<text x="833" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff" font-weight="700">L</text>
+<text x="845" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#fff" font-weight="normal">= 0.4321</text>
+<line x1="148.0" y1="150" x2="212.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s1-f)"/>
+<text x="174.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× x</text>
+<text x="190.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<line x1="338.0" y1="150" x2="402.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s1-f)"/>
+<text x="370.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">σ( · )</text>
+<line x1="528.0" y1="150" x2="592.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s1-f)"/>
+<text x="552.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× tanh(c</text>
+<text x="594.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<text x="604.0" y="138" text-anchor="start" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">)</text>
+<line x1="718.0" y1="150" x2="782.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s1-f)"/>
+<text x="750.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">(target − ·)²</text>
+<rect x="120" y="58" width="92" height="40" rx="7" fill="#eafaf1" stroke="#1e8449" stroke-width="1.6"/>
+<text x="166" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1e8449" font-weight="normal">input</text>
+<text x="160" y="90" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#1e8449" font-weight="700">x</text>
+<text x="168" y="94" text-anchor="start" font-family="sans-serif" font-size="8" fill="#1e8449" font-weight="700">t-1</text>
+<line x1="180" y1="98" x2="180" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s1-g)"/>
+<rect x="510" y="58" width="112" height="40" rx="7" fill="#fef3c7" stroke="#b45309" stroke-width="1.6"/>
+<text x="566" y="75" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#7e5109" font-weight="normal">from cell state</text>
+<text x="566" y="91" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#7e5109" font-weight="700">tanh(c) = 0.2717</text>
+<line x1="566" y1="98" x2="566" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s1-g)"/>
+<rect x="706" y="58" width="92" height="40" rx="7" fill="#fdecea" stroke="#c0392b" stroke-width="1.6"/>
+<text x="752" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">target</text>
+<text x="752" y="91" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.8</text>
+<line x1="752" y1="98" x2="752" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s1-g)"/>
+<text x="275" y="196.0" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">w</text>
+<text x="283" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">ho</text>
+<text x="296" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">·h</text>
+<text x="310" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">t-2</text>
+<text x="326" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">+ b</text>
+<text x="343" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">o</text>
+<text x="355" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> also enter, but contain no w</text>
+<text x="490" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">xo</text>
+<text x="502" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> — their derivative is 0</text>
+<line x1="267" y1="265" x2="93" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s1-b)" opacity="0.22"/>
+<text x="180.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 4</text>
+<text x="180.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂net/∂w = x</text>
+<text x="180.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= 0.5</text>
+<line x1="85" y1="208.0" x2="85" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="457" y1="265" x2="283" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s1-b)" opacity="0.22"/>
+<text x="370.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 3</text>
+<text x="370.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂o/∂net = o(1−o)</text>
+<text x="370.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= 0.2494</text>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="647" y1="265" x2="473" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s1-b)" opacity="0.22"/>
+<text x="560.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 2</text>
+<text x="560.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂h/∂o = tanh(c)</text>
+<text x="560.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= 0.2717</text>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="837" y1="265" x2="663" y2="265" stroke="#c0392b" stroke-width="3.4" marker-end="url(#s1-b)"/>
+<text x="750.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700">Step 1</text>
+<text x="750.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal">∂L/∂h = −2(t−h)</text>
+<text x="750.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= −1.3147</text>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="845" y1="208.0" x2="845" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="120" y1="330" x2="820" y2="330" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="120" y1="330" x2="120" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="820" y1="330" x2="820" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<text x="470" y="355" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5c4630" font-weight="normal">multiply the four red segments together:</text>
+<text x="470" y="380" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">∂L/∂w = (−1.3147) × (0.2717) × (0.2494) × (0.5) = −0.0445</text>
+<text x="470" y="404" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">one forward segment  ↔  one backward derivative — the chain rule is just the path, walked in reverse</text>
+<text x="470" y="428" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1f1a14" font-weight="normal"></text>
+</svg>
+<p class="diagcap">Step 1 crosses the last segment of the path: from the loss back to the output \(h\). The forward operation on this segment was &ldquo;compare to target and square.&rdquo;</p>
+
+<p>The forward pass ended by computing \(L = (\text{target} - h_{t\text{-}1})^2\). This segment&rsquo;s derivative asks: <em>if \(h\) rose slightly, how would \(L\) change?</em> Differentiating (the inner term carries a \(-1\), which flips the sign):</p>
+<div class="d">
+<div class="dl">Symbolic</div>
+\[ \frac{\partial L}{\partial h_{t\text{-}1}} = -2\,(\text{target} - h_{t\text{-}1}) \]
+</div>
+<div class="d">
+<div class="dl">With numbers &mdash; the target (0.8) is the dashed box that joined the path here</div>
+\[ \frac{\partial L}{\partial h_{t\text{-}1}} = -2\,(0.8 - 0.1426) = -2\,(0.6574) = \mathbf{-1.3147} \]
+</div>
+<div class="res">The gradient is negative: increasing \(h_{t\text{-}1}\) would <em>decrease</em> the loss. That makes sense &mdash; our output was too low, so we want it higher.</div>
+
+<!-- ─────────── STEP 2 ─────────── -->
+<div class="sh">Step 2 &mdash; Through the multiplication: \(\partial h_{t\text{-}1} / \partial o_{t\text{-}1}\)</div>
+
+<svg viewBox="0 0 940 470" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="s2-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="s2-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="s2-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#8a7f70" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470" y="30" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#3f2a1d" font-weight="700">THE PATH FROM THE WEIGHT TO THE LOSS</text>
+<text x="470" y="50" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">forward pass runs left→right (purple) — backprop walks the same path right→left (red), one derivative per segment</text>
+<rect x="26.0" y="120.0" width="118" height="60" rx="9" fill="#d5f5e3" stroke="#1e8449" stroke-width="2"/>
+<text x="85" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1e8449" font-weight="normal">Input Weight</text>
+<text x="71" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1e8449" font-weight="700">w</text>
+<text x="87" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1e8449" font-weight="700">xo</text>
+<text x="85" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1e8449" font-weight="normal">= 0.4</text>
+<rect x="216.0" y="120.0" width="118" height="60" rx="9" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+<text x="275" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="normal">Weighted sum</text>
+<text x="261" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">net</text>
+<text x="283" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c0392b" font-weight="700">o</text>
+<text x="275" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="normal">= 0.1</text>
+<rect x="406.0" y="120.0" width="118" height="60" rx="9" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2"/>
+<text x="465" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1f5f8b" font-weight="normal">Output gate</text>
+<text x="451" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1f5f8b" font-weight="700">o</text>
+<text x="467" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1f5f8b" font-weight="700">t-1</text>
+<text x="465" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1f5f8b" font-weight="normal">= 0.5250</text>
+<rect x="596.0" y="120.0" width="118" height="60" rx="9" fill="#fce8f0" stroke="#c2185b" stroke-width="2"/>
+<text x="655" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c2185b" font-weight="normal">New Short-Term</text>
+<text x="641" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c2185b" font-weight="700">h</text>
+<text x="657" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c2185b" font-weight="700">t-1</text>
+<text x="655" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c2185b" font-weight="normal">= 0.1426</text>
+<rect x="786.0" y="120.0" width="118" height="60" rx="9" fill="#3f2a1d" stroke="#3f2a1d" stroke-width="2"/>
+<text x="845" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#fff" font-weight="normal">Loss</text>
+<text x="833" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff" font-weight="700">L</text>
+<text x="845" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#fff" font-weight="normal">= 0.4321</text>
+<line x1="148.0" y1="150" x2="212.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s2-f)"/>
+<text x="174.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× x</text>
+<text x="190.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<line x1="338.0" y1="150" x2="402.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s2-f)"/>
+<text x="370.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">σ( · )</text>
+<line x1="528.0" y1="150" x2="592.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s2-f)"/>
+<text x="552.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× tanh(c</text>
+<text x="594.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<text x="604.0" y="138" text-anchor="start" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">)</text>
+<line x1="718.0" y1="150" x2="782.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s2-f)"/>
+<text x="750.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">(target − ·)²</text>
+<rect x="120" y="58" width="92" height="40" rx="7" fill="#eafaf1" stroke="#1e8449" stroke-width="1.6"/>
+<text x="166" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1e8449" font-weight="normal">input</text>
+<text x="160" y="90" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#1e8449" font-weight="700">x</text>
+<text x="168" y="94" text-anchor="start" font-family="sans-serif" font-size="8" fill="#1e8449" font-weight="700">t-1</text>
+<line x1="180" y1="98" x2="180" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s2-g)"/>
+<rect x="510" y="58" width="112" height="40" rx="7" fill="#fef3c7" stroke="#b45309" stroke-width="1.6"/>
+<text x="566" y="75" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#7e5109" font-weight="normal">from cell state</text>
+<text x="566" y="91" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#7e5109" font-weight="700">tanh(c) = 0.2717</text>
+<line x1="566" y1="98" x2="566" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s2-g)"/>
+<rect x="706" y="58" width="92" height="40" rx="7" fill="#fdecea" stroke="#c0392b" stroke-width="1.6"/>
+<text x="752" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">target</text>
+<text x="752" y="91" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.8</text>
+<line x1="752" y1="98" x2="752" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s2-g)"/>
+<text x="275" y="196.0" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">w</text>
+<text x="283" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">ho</text>
+<text x="296" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">·h</text>
+<text x="310" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">t-2</text>
+<text x="326" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">+ b</text>
+<text x="343" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">o</text>
+<text x="355" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> also enter, but contain no w</text>
+<text x="490" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">xo</text>
+<text x="502" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> — their derivative is 0</text>
+<line x1="267" y1="265" x2="93" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s2-b)" opacity="0.22"/>
+<text x="180.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 4</text>
+<text x="180.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂net/∂w = x</text>
+<text x="180.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= 0.5</text>
+<line x1="85" y1="208.0" x2="85" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="457" y1="265" x2="283" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s2-b)" opacity="0.22"/>
+<text x="370.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 3</text>
+<text x="370.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂o/∂net = o(1−o)</text>
+<text x="370.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= 0.2494</text>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="647" y1="265" x2="473" y2="265" stroke="#c0392b" stroke-width="3.4" marker-end="url(#s2-b)"/>
+<text x="560.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700">Step 2</text>
+<text x="560.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal">∂h/∂o = tanh(c)</text>
+<text x="560.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.2717</text>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="837" y1="265" x2="663" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s2-b)" opacity="0.22"/>
+<text x="750.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 1</text>
+<text x="750.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂L/∂h = −2(t−h)</text>
+<text x="750.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= −1.3147</text>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="845" y1="208.0" x2="845" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="120" y1="330" x2="820" y2="330" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="120" y1="330" x2="120" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="820" y1="330" x2="820" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<text x="470" y="355" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5c4630" font-weight="normal">multiply the four red segments together:</text>
+<text x="470" y="380" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">∂L/∂w = (−1.3147) × (0.2717) × (0.2494) × (0.5) = −0.0445</text>
+<text x="470" y="404" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">one forward segment  ↔  one backward derivative — the chain rule is just the path, walked in reverse</text>
+<text x="470" y="428" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1f1a14" font-weight="normal"></text>
+</svg>
+<p class="diagcap">Step 2 crosses the segment where the gate value \(o\) was multiplied by \(\tanh(c)\) to form \(h\). The derivative of &ldquo;multiply by \(\tanh(c)\)&rdquo; is simply \(\tanh(c)\) itself.</p>
+
+<p>On this segment the forward pass computed \(h_{t\text{-}1} = o_{t\text{-}1}\cdot\tanh(c_{t\text{-}1})\). Since \(\tanh(c_{t\text{-}1})\) does not depend on \(o_{t\text{-}1}\) (it came in from the cell state &mdash; the dashed box), it acts as a constant multiplier, and the derivative of &ldquo;multiply by a constant&rdquo; is that constant:</p>
+<div class="d">
+<div class="dl">Symbolic</div>
+\[ \frac{\partial h_{t\text{-}1}}{\partial o_{t\text{-}1}} = \tanh(c_{t\text{-}1}) \]
+</div>
+<div class="d">
+<div class="dl">With numbers &mdash; reusing the forward-pass value</div>
+\[ \frac{\partial h_{t\text{-}1}}{\partial o_{t\text{-}1}} = \mathbf{0.2717} \]
+</div>
+
+<!-- ─────────── STEP 3 ─────────── -->
+<div class="sh">Step 3 &mdash; Through the sigmoid: \(\partial o_{t\text{-}1} / \partial \text{net}_o\)</div>
+
+<svg viewBox="0 0 940 470" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="s3-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="s3-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="s3-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#8a7f70" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470" y="30" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#3f2a1d" font-weight="700">THE PATH FROM THE WEIGHT TO THE LOSS</text>
+<text x="470" y="50" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">forward pass runs left→right (purple) — backprop walks the same path right→left (red), one derivative per segment</text>
+<rect x="26.0" y="120.0" width="118" height="60" rx="9" fill="#d5f5e3" stroke="#1e8449" stroke-width="2"/>
+<text x="85" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1e8449" font-weight="normal">Input Weight</text>
+<text x="71" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1e8449" font-weight="700">w</text>
+<text x="87" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1e8449" font-weight="700">xo</text>
+<text x="85" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1e8449" font-weight="normal">= 0.4</text>
+<rect x="216.0" y="120.0" width="118" height="60" rx="9" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+<text x="275" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="normal">Weighted sum</text>
+<text x="261" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">net</text>
+<text x="283" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c0392b" font-weight="700">o</text>
+<text x="275" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="normal">= 0.1</text>
+<rect x="406.0" y="120.0" width="118" height="60" rx="9" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2"/>
+<text x="465" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1f5f8b" font-weight="normal">Output gate</text>
+<text x="451" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1f5f8b" font-weight="700">o</text>
+<text x="467" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1f5f8b" font-weight="700">t-1</text>
+<text x="465" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1f5f8b" font-weight="normal">= 0.5250</text>
+<rect x="596.0" y="120.0" width="118" height="60" rx="9" fill="#fce8f0" stroke="#c2185b" stroke-width="2"/>
+<text x="655" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c2185b" font-weight="normal">New Short-Term</text>
+<text x="641" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c2185b" font-weight="700">h</text>
+<text x="657" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c2185b" font-weight="700">t-1</text>
+<text x="655" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c2185b" font-weight="normal">= 0.1426</text>
+<rect x="786.0" y="120.0" width="118" height="60" rx="9" fill="#3f2a1d" stroke="#3f2a1d" stroke-width="2"/>
+<text x="845" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#fff" font-weight="normal">Loss</text>
+<text x="833" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff" font-weight="700">L</text>
+<text x="845" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#fff" font-weight="normal">= 0.4321</text>
+<line x1="148.0" y1="150" x2="212.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s3-f)"/>
+<text x="174.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× x</text>
+<text x="190.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<line x1="338.0" y1="150" x2="402.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s3-f)"/>
+<text x="370.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">σ( · )</text>
+<line x1="528.0" y1="150" x2="592.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s3-f)"/>
+<text x="552.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× tanh(c</text>
+<text x="594.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<text x="604.0" y="138" text-anchor="start" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">)</text>
+<line x1="718.0" y1="150" x2="782.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s3-f)"/>
+<text x="750.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">(target − ·)²</text>
+<rect x="120" y="58" width="92" height="40" rx="7" fill="#eafaf1" stroke="#1e8449" stroke-width="1.6"/>
+<text x="166" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1e8449" font-weight="normal">input</text>
+<text x="160" y="90" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#1e8449" font-weight="700">x</text>
+<text x="168" y="94" text-anchor="start" font-family="sans-serif" font-size="8" fill="#1e8449" font-weight="700">t-1</text>
+<line x1="180" y1="98" x2="180" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s3-g)"/>
+<rect x="510" y="58" width="112" height="40" rx="7" fill="#fef3c7" stroke="#b45309" stroke-width="1.6"/>
+<text x="566" y="75" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#7e5109" font-weight="normal">from cell state</text>
+<text x="566" y="91" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#7e5109" font-weight="700">tanh(c) = 0.2717</text>
+<line x1="566" y1="98" x2="566" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s3-g)"/>
+<rect x="706" y="58" width="92" height="40" rx="7" fill="#fdecea" stroke="#c0392b" stroke-width="1.6"/>
+<text x="752" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">target</text>
+<text x="752" y="91" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.8</text>
+<line x1="752" y1="98" x2="752" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s3-g)"/>
+<text x="275" y="196.0" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">w</text>
+<text x="283" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">ho</text>
+<text x="296" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">·h</text>
+<text x="310" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">t-2</text>
+<text x="326" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">+ b</text>
+<text x="343" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">o</text>
+<text x="355" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> also enter, but contain no w</text>
+<text x="490" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">xo</text>
+<text x="502" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> — their derivative is 0</text>
+<line x1="267" y1="265" x2="93" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s3-b)" opacity="0.22"/>
+<text x="180.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 4</text>
+<text x="180.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂net/∂w = x</text>
+<text x="180.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= 0.5</text>
+<line x1="85" y1="208.0" x2="85" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="457" y1="265" x2="283" y2="265" stroke="#c0392b" stroke-width="3.4" marker-end="url(#s3-b)"/>
+<text x="370.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700">Step 3</text>
+<text x="370.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal">∂o/∂net = o(1−o)</text>
+<text x="370.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.2494</text>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="647" y1="265" x2="473" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s3-b)" opacity="0.22"/>
+<text x="560.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 2</text>
+<text x="560.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂h/∂o = tanh(c)</text>
+<text x="560.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= 0.2717</text>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="837" y1="265" x2="663" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s3-b)" opacity="0.22"/>
+<text x="750.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 1</text>
+<text x="750.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂L/∂h = −2(t−h)</text>
+<text x="750.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= −1.3147</text>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="845" y1="208.0" x2="845" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="120" y1="330" x2="820" y2="330" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="120" y1="330" x2="120" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="820" y1="330" x2="820" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<text x="470" y="355" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5c4630" font-weight="normal">multiply the four red segments together:</text>
+<text x="470" y="380" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">∂L/∂w = (−1.3147) × (0.2717) × (0.2494) × (0.5) = −0.0445</text>
+<text x="470" y="404" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">one forward segment  ↔  one backward derivative — the chain rule is just the path, walked in reverse</text>
+<text x="470" y="428" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1f1a14" font-weight="normal"></text>
+</svg>
+<p class="diagcap">Step 3 crosses the sigmoid segment: from the gate value \(o\) back to the weighted sum \(\text{net}_o\).</p>
+
+<p>The gate value came from a sigmoid: \(o_{t\text{-}1} = \sigma(\text{net}_o)\). The sigmoid&rsquo;s derivative has the famously tidy form \(\sigma(1-\sigma)\), and we already know \(\sigma = o_{t\text{-}1} = 0.5250\) from the forward pass &mdash; no recomputation needed:</p>
+<div class="d">
+<div class="dl">Symbolic</div>
+\[ \frac{\partial o_{t\text{-}1}}{\partial \text{net}_o} = o_{t\text{-}1}\,(1 - o_{t\text{-}1}) \]
+</div>
+<div class="d">
+<div class="dl">With numbers</div>
+\[ \frac{\partial o_{t\text{-}1}}{\partial \text{net}_o} = 0.5250\,(1 - 0.5250) = 0.5250 \times 0.4750 = \mathbf{0.2494} \]
+</div>
+
+<!-- ─────────── STEP 4 ─────────── -->
+<div class="sh">Step 4 &mdash; The leftmost segment: \(\partial \text{net}_o / \partial w_{xo_{t\text{-}1}}\)</div>
+
+<svg viewBox="0 0 940 470" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="s4-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="s4-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="s4-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#8a7f70" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470" y="30" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#3f2a1d" font-weight="700">THE PATH FROM THE WEIGHT TO THE LOSS</text>
+<text x="470" y="50" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">forward pass runs left→right (purple) — backprop walks the same path right→left (red), one derivative per segment</text>
+<rect x="26.0" y="120.0" width="118" height="60" rx="9" fill="#d5f5e3" stroke="#1e8449" stroke-width="2"/>
+<text x="85" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1e8449" font-weight="normal">Input Weight</text>
+<text x="71" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1e8449" font-weight="700">w</text>
+<text x="87" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1e8449" font-weight="700">xo</text>
+<text x="85" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1e8449" font-weight="normal">= 0.4</text>
+<rect x="216.0" y="120.0" width="118" height="60" rx="9" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+<text x="275" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="normal">Weighted sum</text>
+<text x="261" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">net</text>
+<text x="283" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c0392b" font-weight="700">o</text>
+<text x="275" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="normal">= 0.1</text>
+<rect x="406.0" y="120.0" width="118" height="60" rx="9" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2"/>
+<text x="465" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1f5f8b" font-weight="normal">Output gate</text>
+<text x="451" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1f5f8b" font-weight="700">o</text>
+<text x="467" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#1f5f8b" font-weight="700">t-1</text>
+<text x="465" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1f5f8b" font-weight="normal">= 0.5250</text>
+<rect x="596.0" y="120.0" width="118" height="60" rx="9" fill="#fce8f0" stroke="#c2185b" stroke-width="2"/>
+<text x="655" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c2185b" font-weight="normal">New Short-Term</text>
+<text x="641" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c2185b" font-weight="700">h</text>
+<text x="657" y="162" text-anchor="start" font-family="sans-serif" font-size="9" fill="#c2185b" font-weight="700">t-1</text>
+<text x="655" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c2185b" font-weight="normal">= 0.1426</text>
+<rect x="786.0" y="120.0" width="118" height="60" rx="9" fill="#3f2a1d" stroke="#3f2a1d" stroke-width="2"/>
+<text x="845" y="139" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#fff" font-weight="normal">Loss</text>
+<text x="833" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff" font-weight="700">L</text>
+<text x="845" y="174" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#fff" font-weight="normal">= 0.4321</text>
+<line x1="148.0" y1="150" x2="212.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s4-f)"/>
+<text x="174.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× x</text>
+<text x="190.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<line x1="338.0" y1="150" x2="402.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s4-f)"/>
+<text x="370.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">σ( · )</text>
+<line x1="528.0" y1="150" x2="592.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s4-f)"/>
+<text x="552.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">× tanh(c</text>
+<text x="594.0" y="142" text-anchor="start" font-family="sans-serif" font-size="8" fill="#7b2d8b" font-weight="700">t-1</text>
+<text x="604.0" y="138" text-anchor="start" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">)</text>
+<line x1="718.0" y1="150" x2="782.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#s4-f)"/>
+<text x="750.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#7b2d8b" font-weight="700">(target − ·)²</text>
+<rect x="120" y="58" width="92" height="40" rx="7" fill="#eafaf1" stroke="#1e8449" stroke-width="1.6"/>
+<text x="166" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1e8449" font-weight="normal">input</text>
+<text x="160" y="90" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#1e8449" font-weight="700">x</text>
+<text x="168" y="94" text-anchor="start" font-family="sans-serif" font-size="8" fill="#1e8449" font-weight="700">t-1</text>
+<line x1="180" y1="98" x2="180" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s4-g)"/>
+<rect x="510" y="58" width="112" height="40" rx="7" fill="#fef3c7" stroke="#b45309" stroke-width="1.6"/>
+<text x="566" y="75" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#7e5109" font-weight="normal">from cell state</text>
+<text x="566" y="91" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#7e5109" font-weight="700">tanh(c) = 0.2717</text>
+<line x1="566" y1="98" x2="566" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s4-g)"/>
+<rect x="706" y="58" width="92" height="40" rx="7" fill="#fdecea" stroke="#c0392b" stroke-width="1.6"/>
+<text x="752" y="75" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">target</text>
+<text x="752" y="91" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.8</text>
+<line x1="752" y1="98" x2="752" y2="144" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#s4-g)"/>
+<text x="275" y="196.0" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">w</text>
+<text x="283" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">ho</text>
+<text x="296" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">·h</text>
+<text x="310" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">t-2</text>
+<text x="326" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal">+ b</text>
+<text x="343" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">o</text>
+<text x="355" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> also enter, but contain no w</text>
+<text x="490" y="199.0" text-anchor="start" font-family="sans-serif" font-size="7.5" fill="#9a9084" font-weight="normal">xo</text>
+<text x="502" y="196.0" text-anchor="start" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal"> — their derivative is 0</text>
+<line x1="267" y1="265" x2="93" y2="265" stroke="#c0392b" stroke-width="3.4" marker-end="url(#s4-b)"/>
+<text x="180.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700">Step 4</text>
+<text x="180.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal">∂net/∂w = x</text>
+<text x="180.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700">= 0.5</text>
+<line x1="85" y1="208.0" x2="85" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="457" y1="265" x2="283" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s4-b)" opacity="0.22"/>
+<text x="370.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 3</text>
+<text x="370.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂o/∂net = o(1−o)</text>
+<text x="370.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= 0.2494</text>
+<line x1="275" y1="208.0" x2="275" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="647" y1="265" x2="473" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s4-b)" opacity="0.22"/>
+<text x="560.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 2</text>
+<text x="560.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂h/∂o = tanh(c)</text>
+<text x="560.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= 0.2717</text>
+<line x1="465" y1="208.0" x2="465" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="837" y1="265" x2="663" y2="265" stroke="#c0392b" stroke-width="2.4" marker-end="url(#s4-b)" opacity="0.22"/>
+<text x="750.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#c0392b" font-weight="700" opacity="0.22">Step 1</text>
+<text x="750.0" y="285" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="normal" opacity="0.22">∂L/∂h = −2(t−h)</text>
+<text x="750.0" y="301" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#922b21" font-weight="700" opacity="0.22">= −1.3147</text>
+<line x1="655" y1="208.0" x2="655" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="845" y1="208.0" x2="845" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.22"/>
+<line x1="120" y1="330" x2="820" y2="330" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="120" y1="330" x2="120" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<line x1="820" y1="330" x2="820" y2="324" stroke="#8a7f70" stroke-width="1.4"/>
+<text x="470" y="355" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5c4630" font-weight="normal">multiply the four red segments together:</text>
+<text x="470" y="380" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">∂L/∂w = (−1.3147) × (0.2717) × (0.2494) × (0.5) = −0.0445</text>
+<text x="470" y="404" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7a7060" font-weight="normal">one forward segment  ↔  one backward derivative — the chain rule is just the path, walked in reverse</text>
+<text x="470" y="428" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1f1a14" font-weight="normal"></text>
+</svg>
+<p class="diagcap">Step 4 crosses the first segment: from the weighted sum back to the weight itself. The forward operation was &ldquo;multiply the weight by \(x\)&rdquo; &mdash; so the derivative is \(x\).</p>
+
+<p>The output gate&rsquo;s weighted sum was \(\text{net}_o = w_{xo_{t\text{-}1}}\cdot x_{t\text{-}1} + w_{ho_{t\text{-}1}}\cdot h_{t\text{-}2} + b_{o_{t\text{-}1}}\). Only the first term contains our weight &mdash; the other two terms (grayed out beneath the diagram&rsquo;s sum box) contribute nothing to this derivative:</p>
+<div class="d">
+<div class="dl">Symbolic</div>
+\[ \frac{\partial \text{net}_o}{\partial w_{xo_{t\text{-}1}}} = x_{t\text{-}1} \]
+</div>
+<div class="d">
+<div class="dl">With numbers &mdash; the input (0.5) is the dashed box that joined the path here</div>
+\[ \frac{\partial \text{net}_o}{\partial w_{xo_{t\text{-}1}}} = \mathbf{0.5} \]
+</div>
+<div class="int"><strong>A nice pattern:</strong> the gradient of any weighted sum with respect to one of its weights is just the value that weight was multiplied by in the forward pass. The input weight&rsquo;s partial is the input \(x\); the hidden weight&rsquo;s partial would be \(h\); the bias&rsquo;s partial is \(1\).</div>
+
+<!-- ─────────── ASSEMBLE ─────────── -->
+<h2>Assemble the Full Gradient</h2>
+<p>Now read the master diagram one more time: four red arrows, four numbers. Multiply them along the path:</p>
+<div class="d">
+<div class="dl">Symbolic</div>
+\[ \frac{\partial L}{\partial w_{xo_{t\text{-}1}}}
+   = \frac{\partial L}{\partial h_{t\text{-}1}}
+   \cdot \frac{\partial h_{t\text{-}1}}{\partial o_{t\text{-}1}}
+   \cdot \frac{\partial o_{t\text{-}1}}{\partial \text{net}_o}
+   \cdot \frac{\partial \text{net}_o}{\partial w_{xo_{t\text{-}1}}} \]
+</div>
+<div class="d">
+<div class="dl">Substitute the four numbers (Step 1 &times; Step 2 &times; Step 3 &times; Step 4)</div>
+\[ \frac{\partial L}{\partial w_{xo_{t\text{-}1}}}
+   = (-1.3147)\,(0.2717)\,(0.2494)\,(0.5) \]
+\[ = \mathbf{-0.0445} \]
+</div>
+<div class="res">The gradient of the loss with respect to \(w_{xo_{t\text{-}1}}\) is \(-0.0445\). Negative means: increasing this weight reduces the loss, so the update will push the weight <em>up</em>.</div>
+
+<!-- ─────────── UPDATE ─────────── -->
+<div class="sh">Final Step &mdash; Update the Weight</div>
+<p>Gradient descent moves the weight a small step in the direction that lowers the loss, scaled by the learning rate \(\alpha = 0.1\):</p>
+<div class="d">
+<div class="dl">Symbolic</div>
+\[ w_{xo_{t\text{-}1}}^{\text{new}} = w_{xo_{t\text{-}1}}^{\text{old}} - \alpha\,\frac{\partial L}{\partial w_{xo_{t\text{-}1}}} \]
+</div>
+<div class="d">
+<div class="dl">With numbers</div>
+\[ w_{xo_{t\text{-}1}}^{\text{new}} = 0.4 - (0.1)(-0.0445) = 0.4 + 0.00445 = \mathbf{0.4045} \]
+</div>
+<div class="res">The weight moved from \(0.4000\) to \(0.4045\) &mdash; a small step upward, exactly as the negative gradient predicted. Subtracting a negative number adds to the weight.</div>
+
+<h2>Summary &mdash; The Whole Update in One Table</h2>
+<table class="tbl">
+<thead><tr><th>Stage</th><th>Path segment</th><th>Quantity</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Step 1</td><td>L &rarr; h</td><td>&part;L / &part;h_t-1 = &minus;2(target&minus;h)</td><td>&minus;1.3147</td></tr>
+<tr><td>Step 2</td><td>h &rarr; o</td><td>&part;h_t-1 / &part;o_t-1 = tanh(c_t-1)</td><td>0.2717</td></tr>
+<tr><td>Step 3</td><td>o &rarr; net_o</td><td>&part;o_t-1 / &part;net_o = o(1&minus;o)</td><td>0.2494</td></tr>
+<tr><td>Step 4</td><td>net_o &rarr; w_xo</td><td>&part;net_o / &part;w_xo = x_t-1</td><td>0.5000</td></tr>
+<tr><td>Product</td><td>full path</td><td>&part;L / &part;w_xo</td><td><strong>&minus;0.0445</strong></td></tr>
+<tr><td>Update</td><td>&mdash;</td><td>w_xo : 0.4000 &minus; (0.1)(&minus;0.0445)</td><td><strong>0.4045</strong></td></tr>
+</tbody>
+</table>
+
+<div class="nb"><strong>What changes for other weights?</strong> Only the leftmost segments of the path. Steps 1 and 2 are shared by everything on the output side. To update the output gate&rsquo;s <em>hidden</em> weight \(w_{ho_{t\text{-}1}}\), you would keep Steps 1&ndash;3 identical and only swap Step 4 to use \(h_{t\text{-}2}\) instead of \(x_{t\text{-}1}\). Weights in the forget and input gates need a longer path because they reach the loss <em>through the cell state</em> &mdash; their diagram would show the path looping through \(c_{t\text{-}1}\), and the chain rule would pick up one extra factor per extra segment. That is the natural next document.</div>
+
+<div class="footer">
+Backpropagation for a single weight, \(w_{xo}\) at time step t-1, using your LSTM diagram&rsquo;s weight names.<br>
+Loss \(L=(\text{target}-h_{t\text{-}1})^2\), target \(=0.8\), learning rate \(=0.1\).
+</div>
+
+</body></html>
