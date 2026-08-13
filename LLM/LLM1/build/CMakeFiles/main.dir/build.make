@@ -83,38 +83,10 @@ CMakeFiles/main.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/main.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LLM/LLM1/main.cpp -o CMakeFiles/main.dir/main.cpp.s
 
-CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o: CMakeFiles/main.dir/flags.make
-CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Sigmoid/sigmoid.cpp
-CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o -MF CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o.d -o CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Sigmoid/sigmoid.cpp
-
-CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Sigmoid/sigmoid.cpp > CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.i
-
-CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Sigmoid/sigmoid.cpp -o CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.s
-
-CMakeFiles/main.dir/src/Tanh/tanh.cpp.o: CMakeFiles/main.dir/flags.make
-CMakeFiles/main.dir/src/Tanh/tanh.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Tanh/tanh.cpp
-CMakeFiles/main.dir/src/Tanh/tanh.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/main.dir/src/Tanh/tanh.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/Tanh/tanh.cpp.o -MF CMakeFiles/main.dir/src/Tanh/tanh.cpp.o.d -o CMakeFiles/main.dir/src/Tanh/tanh.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Tanh/tanh.cpp
-
-CMakeFiles/main.dir/src/Tanh/tanh.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/main.dir/src/Tanh/tanh.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Tanh/tanh.cpp > CMakeFiles/main.dir/src/Tanh/tanh.cpp.i
-
-CMakeFiles/main.dir/src/Tanh/tanh.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/main.dir/src/Tanh/tanh.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Tanh/tanh.cpp -o CMakeFiles/main.dir/src/Tanh/tanh.cpp.s
-
 CMakeFiles/main.dir/src/activation_functions.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/activation_functions.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/activation_functions.cpp
 CMakeFiles/main.dir/src/activation_functions.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/main.dir/src/activation_functions.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/main.dir/src/activation_functions.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/activation_functions.cpp.o -MF CMakeFiles/main.dir/src/activation_functions.cpp.o.d -o CMakeFiles/main.dir/src/activation_functions.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/activation_functions.cpp
 
 CMakeFiles/main.dir/src/activation_functions.cpp.i: cmake_force
@@ -128,7 +100,7 @@ CMakeFiles/main.dir/src/activation_functions.cpp.s: cmake_force
 CMakeFiles/main.dir/src/char_tokenizer.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/char_tokenizer.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/char_tokenizer.cpp
 CMakeFiles/main.dir/src/char_tokenizer.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/main.dir/src/char_tokenizer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/main.dir/src/char_tokenizer.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/char_tokenizer.cpp.o -MF CMakeFiles/main.dir/src/char_tokenizer.cpp.o.d -o CMakeFiles/main.dir/src/char_tokenizer.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/char_tokenizer.cpp
 
 CMakeFiles/main.dir/src/char_tokenizer.cpp.i: cmake_force
@@ -142,7 +114,7 @@ CMakeFiles/main.dir/src/char_tokenizer.cpp.s: cmake_force
 CMakeFiles/main.dir/src/embedding_table.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/embedding_table.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/embedding_table.cpp
 CMakeFiles/main.dir/src/embedding_table.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/main.dir/src/embedding_table.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/main.dir/src/embedding_table.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/embedding_table.cpp.o -MF CMakeFiles/main.dir/src/embedding_table.cpp.o.d -o CMakeFiles/main.dir/src/embedding_table.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/embedding_table.cpp
 
 CMakeFiles/main.dir/src/embedding_table.cpp.i: cmake_force
@@ -156,7 +128,7 @@ CMakeFiles/main.dir/src/embedding_table.cpp.s: cmake_force
 CMakeFiles/main.dir/src/feed_forward.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/feed_forward.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/feed_forward.cpp
 CMakeFiles/main.dir/src/feed_forward.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/main.dir/src/feed_forward.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/main.dir/src/feed_forward.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/feed_forward.cpp.o -MF CMakeFiles/main.dir/src/feed_forward.cpp.o.d -o CMakeFiles/main.dir/src/feed_forward.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/feed_forward.cpp
 
 CMakeFiles/main.dir/src/feed_forward.cpp.i: cmake_force
@@ -170,7 +142,7 @@ CMakeFiles/main.dir/src/feed_forward.cpp.s: cmake_force
 CMakeFiles/main.dir/src/gpt_model.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/gpt_model.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/gpt_model.cpp
 CMakeFiles/main.dir/src/gpt_model.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/main.dir/src/gpt_model.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/main.dir/src/gpt_model.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/gpt_model.cpp.o -MF CMakeFiles/main.dir/src/gpt_model.cpp.o.d -o CMakeFiles/main.dir/src/gpt_model.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/gpt_model.cpp
 
 CMakeFiles/main.dir/src/gpt_model.cpp.i: cmake_force
@@ -184,7 +156,7 @@ CMakeFiles/main.dir/src/gpt_model.cpp.s: cmake_force
 CMakeFiles/main.dir/src/layer_norm.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/layer_norm.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/layer_norm.cpp
 CMakeFiles/main.dir/src/layer_norm.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/main.dir/src/layer_norm.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/main.dir/src/layer_norm.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/layer_norm.cpp.o -MF CMakeFiles/main.dir/src/layer_norm.cpp.o.d -o CMakeFiles/main.dir/src/layer_norm.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/layer_norm.cpp
 
 CMakeFiles/main.dir/src/layer_norm.cpp.i: cmake_force
@@ -198,7 +170,7 @@ CMakeFiles/main.dir/src/layer_norm.cpp.s: cmake_force
 CMakeFiles/main.dir/src/linear_layer.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/linear_layer.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/linear_layer.cpp
 CMakeFiles/main.dir/src/linear_layer.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/main.dir/src/linear_layer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/main.dir/src/linear_layer.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/linear_layer.cpp.o -MF CMakeFiles/main.dir/src/linear_layer.cpp.o.d -o CMakeFiles/main.dir/src/linear_layer.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/linear_layer.cpp
 
 CMakeFiles/main.dir/src/linear_layer.cpp.i: cmake_force
@@ -212,7 +184,7 @@ CMakeFiles/main.dir/src/linear_layer.cpp.s: cmake_force
 CMakeFiles/main.dir/src/matrix.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/matrix.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/matrix.cpp
 CMakeFiles/main.dir/src/matrix.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/main.dir/src/matrix.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/main.dir/src/matrix.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/matrix.cpp.o -MF CMakeFiles/main.dir/src/matrix.cpp.o.d -o CMakeFiles/main.dir/src/matrix.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/matrix.cpp
 
 CMakeFiles/main.dir/src/matrix.cpp.i: cmake_force
@@ -226,7 +198,7 @@ CMakeFiles/main.dir/src/matrix.cpp.s: cmake_force
 CMakeFiles/main.dir/src/multi_head_attention.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/multi_head_attention.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/multi_head_attention.cpp
 CMakeFiles/main.dir/src/multi_head_attention.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/main.dir/src/multi_head_attention.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/main.dir/src/multi_head_attention.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/multi_head_attention.cpp.o -MF CMakeFiles/main.dir/src/multi_head_attention.cpp.o.d -o CMakeFiles/main.dir/src/multi_head_attention.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/multi_head_attention.cpp
 
 CMakeFiles/main.dir/src/multi_head_attention.cpp.i: cmake_force
@@ -240,7 +212,7 @@ CMakeFiles/main.dir/src/multi_head_attention.cpp.s: cmake_force
 CMakeFiles/main.dir/src/text_dataset.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/text_dataset.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/text_dataset.cpp
 CMakeFiles/main.dir/src/text_dataset.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/main.dir/src/text_dataset.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/main.dir/src/text_dataset.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/text_dataset.cpp.o -MF CMakeFiles/main.dir/src/text_dataset.cpp.o.d -o CMakeFiles/main.dir/src/text_dataset.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/text_dataset.cpp
 
 CMakeFiles/main.dir/src/text_dataset.cpp.i: cmake_force
@@ -254,7 +226,7 @@ CMakeFiles/main.dir/src/text_dataset.cpp.s: cmake_force
 CMakeFiles/main.dir/src/transformer_block.cpp.o: CMakeFiles/main.dir/flags.make
 CMakeFiles/main.dir/src/transformer_block.cpp.o: /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/transformer_block.cpp
 CMakeFiles/main.dir/src/transformer_block.cpp.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/main.dir/src/transformer_block.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/main.dir/src/transformer_block.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/main.dir/src/transformer_block.cpp.o -MF CMakeFiles/main.dir/src/transformer_block.cpp.o.d -o CMakeFiles/main.dir/src/transformer_block.cpp.o -c /home/gary/Desktop/Simple_RNN/LLM/LLM1/src/transformer_block.cpp
 
 CMakeFiles/main.dir/src/transformer_block.cpp.i: cmake_force
@@ -268,8 +240,6 @@ CMakeFiles/main.dir/src/transformer_block.cpp.s: cmake_force
 # Object files for target main
 main_OBJECTS = \
 "CMakeFiles/main.dir/main.cpp.o" \
-"CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o" \
-"CMakeFiles/main.dir/src/Tanh/tanh.cpp.o" \
 "CMakeFiles/main.dir/src/activation_functions.cpp.o" \
 "CMakeFiles/main.dir/src/char_tokenizer.cpp.o" \
 "CMakeFiles/main.dir/src/embedding_table.cpp.o" \
@@ -286,8 +256,6 @@ main_OBJECTS = \
 main_EXTERNAL_OBJECTS =
 
 main: CMakeFiles/main.dir/main.cpp.o
-main: CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o
-main: CMakeFiles/main.dir/src/Tanh/tanh.cpp.o
 main: CMakeFiles/main.dir/src/activation_functions.cpp.o
 main: CMakeFiles/main.dir/src/char_tokenizer.cpp.o
 main: CMakeFiles/main.dir/src/embedding_table.cpp.o
@@ -301,7 +269,7 @@ main: CMakeFiles/main.dir/src/text_dataset.cpp.o
 main: CMakeFiles/main.dir/src/transformer_block.cpp.o
 main: CMakeFiles/main.dir/build.make
 main: CMakeFiles/main.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Linking CXX executable main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/gary/Desktop/Simple_RNN/LLM/LLM1/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Linking CXX executable main"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/main.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

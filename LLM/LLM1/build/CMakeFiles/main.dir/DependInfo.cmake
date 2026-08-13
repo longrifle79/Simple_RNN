@@ -9,8 +9,6 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/gary/Desktop/Simple_RNN/LLM/LLM1/main.cpp" "CMakeFiles/main.dir/main.cpp.o" "gcc" "CMakeFiles/main.dir/main.cpp.o.d"
-  "/home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Sigmoid/sigmoid.cpp" "CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o" "gcc" "CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o.d"
-  "/home/gary/Desktop/Simple_RNN/LLM/LLM1/src/Tanh/tanh.cpp" "CMakeFiles/main.dir/src/Tanh/tanh.cpp.o" "gcc" "CMakeFiles/main.dir/src/Tanh/tanh.cpp.o.d"
   "/home/gary/Desktop/Simple_RNN/LLM/LLM1/src/activation_functions.cpp" "CMakeFiles/main.dir/src/activation_functions.cpp.o" "gcc" "CMakeFiles/main.dir/src/activation_functions.cpp.o.d"
   "/home/gary/Desktop/Simple_RNN/LLM/LLM1/src/char_tokenizer.cpp" "CMakeFiles/main.dir/src/char_tokenizer.cpp.o" "gcc" "CMakeFiles/main.dir/src/char_tokenizer.cpp.o.d"
   "/home/gary/Desktop/Simple_RNN/LLM/LLM1/src/embedding_table.cpp" "CMakeFiles/main.dir/src/embedding_table.cpp.o" "gcc" "CMakeFiles/main.dir/src/embedding_table.cpp.o.d"

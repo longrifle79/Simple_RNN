@@ -154,54 +154,6 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.cpp.s
 .PHONY : main.cpp.s
 
-src/Sigmoid/sigmoid.o: src/Sigmoid/sigmoid.cpp.o
-.PHONY : src/Sigmoid/sigmoid.o
-
-# target to build an object file
-src/Sigmoid/sigmoid.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o
-.PHONY : src/Sigmoid/sigmoid.cpp.o
-
-src/Sigmoid/sigmoid.i: src/Sigmoid/sigmoid.cpp.i
-.PHONY : src/Sigmoid/sigmoid.i
-
-# target to preprocess a source file
-src/Sigmoid/sigmoid.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.i
-.PHONY : src/Sigmoid/sigmoid.cpp.i
-
-src/Sigmoid/sigmoid.s: src/Sigmoid/sigmoid.cpp.s
-.PHONY : src/Sigmoid/sigmoid.s
-
-# target to generate assembly for a file
-src/Sigmoid/sigmoid.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.s
-.PHONY : src/Sigmoid/sigmoid.cpp.s
-
-src/Tanh/tanh.o: src/Tanh/tanh.cpp.o
-.PHONY : src/Tanh/tanh.o
-
-# target to build an object file
-src/Tanh/tanh.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/Tanh/tanh.cpp.o
-.PHONY : src/Tanh/tanh.cpp.o
-
-src/Tanh/tanh.i: src/Tanh/tanh.cpp.i
-.PHONY : src/Tanh/tanh.i
-
-# target to preprocess a source file
-src/Tanh/tanh.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/Tanh/tanh.cpp.i
-.PHONY : src/Tanh/tanh.cpp.i
-
-src/Tanh/tanh.s: src/Tanh/tanh.cpp.s
-.PHONY : src/Tanh/tanh.s
-
-# target to generate assembly for a file
-src/Tanh/tanh.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/Tanh/tanh.cpp.s
-.PHONY : src/Tanh/tanh.cpp.s
-
 src/activation_functions.o: src/activation_functions.cpp.o
 .PHONY : src/activation_functions.o
 
@@ -478,12 +430,6 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
-	@echo "... src/Sigmoid/sigmoid.o"
-	@echo "... src/Sigmoid/sigmoid.i"
-	@echo "... src/Sigmoid/sigmoid.s"
-	@echo "... src/Tanh/tanh.o"
-	@echo "... src/Tanh/tanh.i"
-	@echo "... src/Tanh/tanh.s"
 	@echo "... src/activation_functions.o"
 	@echo "... src/activation_functions.i"
 	@echo "... src/activation_functions.s"

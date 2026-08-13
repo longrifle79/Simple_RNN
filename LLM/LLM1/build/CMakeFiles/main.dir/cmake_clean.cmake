@@ -1,10 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/main.dir/main.cpp.o"
   "CMakeFiles/main.dir/main.cpp.o.d"
-  "CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o"
-  "CMakeFiles/main.dir/src/Sigmoid/sigmoid.cpp.o.d"
-  "CMakeFiles/main.dir/src/Tanh/tanh.cpp.o"
-  "CMakeFiles/main.dir/src/Tanh/tanh.cpp.o.d"
   "CMakeFiles/main.dir/src/activation_functions.cpp.o"
   "CMakeFiles/main.dir/src/activation_functions.cpp.o.d"
   "CMakeFiles/main.dir/src/char_tokenizer.cpp.o"
