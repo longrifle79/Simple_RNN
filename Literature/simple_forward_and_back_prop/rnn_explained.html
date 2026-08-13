@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Understanding RNNs - "How To Make" Example</title>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    :root {
+      --bg: #faf8f3;
+      --text: #1f1a14;
+      --accent: #8B5E3C;
+      --light-accent: #EDE4D9;
+      --border: #d4ccc0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+    
+    h1 { font-size: 28px; font-weight: 600; color: #3f2a1d; margin-bottom: 8px; }
+    h2 { font-size: 20px; font-weight: 600; color: #3f2a1d; margin-top: 36px; margin-bottom: 12px; border-bottom: 2px solid var(--light-accent); padding-bottom: 6px; }
+    h3 { font-size: 17px; font-weight: 600; color: var(--accent); margin-top: 24px; margin-bottom: 8px; }
+    
+    .subtitle { font-size: 15px; color: #7a7060; margin-bottom: 32px; }
+    
+    .intro-box, .summary-box {
+      background: white; border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 32px;
+    }
+    
+    .diagram {
+      background: white; border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;
+    }
+    
+    .equation {
+      background: white; border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px 18px; margin: 14px 0; font-size: 15.5px; overflow-x: auto;
+    }
+    
+    .result {
+      background: #e8f0e3; border-left: 4px solid #5a8f4d;
+      padding: 12px 16px; margin: 16px 0; font-size: 15px;
+    }
+    
+    .step { margin: 18px 0; padding-left: 8px; }
+    .step-number {
+      display: inline-block; background: var(--accent); color: white; font-size: 13px; font-weight: 600;
+      width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; margin-right: 10px; vertical-align: middle;
+    }
+    
+    .footer {
+      margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border);
+      font-size: 12.5px; color: #8a7f70; text-align: center;
+    }
+    
+    table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+    th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; }
+    th { background: #f5f1e9; }
+  </style>
+</head>
+<body>
+
+  <h1>Understanding Recurrent Neural Networks (RNNs)</h1>
+  <p class="subtitle">A clear explanation using the "How To Make" example from the video</p>
+
+  <div class="intro-box">
+    <p><strong>What is an RNN?</strong> A Recurrent Neural Network is a type of neural network designed to work with <strong>sequences</strong> of data (like words in a sentence, time series, or music notes). Unlike regular neural networks, RNNs have "memory" — they can remember information from previous steps in the sequence.</p>
+  </div>
+
+  <h2>The Diagram Explained</h2>
+  
+  <div class="diagram">
+    <p><strong>The Unfolded RNN for the sequence "How → To → Make"</strong></p>
+    <p style="font-size:13px; color:#666;">(This is the standard way to draw an RNN when we "unroll" it across time steps)</p>
+  </div>
+
+  <h3>What each element represents:</h3>
+
+  <table>
+    <tr>
+      <th>Element</th>
+      <th>What it is</th>
+      <th>In this example</th>
+    </tr>
+    <tr>
+      <td><strong>x₁, x₂, x₃</strong><br>(inputs)</td>
+      <td>The input at each time step. Usually a vector (e.g. word embedding or one-hot encoding of the word).</td>
+      <td>x₁ = "How"<br>x₂ = "To"<br>x₃ = "Make"</td>
+    </tr>
+    <tr>
+      <td><strong>h₁, h₂, h₃</strong><br>(hidden states)</td>
+      <td>The "memory" or "context" of the network at each time step. hₜ contains information about all previous inputs (x₁ to xₜ).</td>
+      <td>h₁ processes "How"<br>h₂ processes "To" + memory from h₁<br>h₃ processes "Make" + memory from h₂</td>
+    </tr>
+    <tr>
+      <td><strong>y₁, y₂, y₃</strong><br>(outputs)</td>
+      <td>The output at each time step. In language modeling, this is often the predicted next word (as a probability distribution).</td>
+      <td>y₁ might predict "To"<br>y₂ might predict "Make"<br>y₃ might predict what comes after "Make" (e.g. "a cake")</td>
+    </tr>
+    <tr>
+      <td><strong>U</strong> (input weights)</td>
+      <td>The weight matrix that transforms the input xₜ into the hidden state.</td>
+      <td>Same U is used at every time step (shared weights)</td>
+    </tr>
+    <tr>
+      <td><strong>V</strong> (recurrent weights)</td>
+      <td>The weight matrix that transforms the previous hidden state h_{t-1} into the current hidden state.</td>
+      <td>This is what gives the RNN its "memory" — it carries information forward in time.</td>
+    </tr>
+    <tr>
+      <td><strong>W</strong> (output weights)</td>
+      <td>The weight matrix that transforms the hidden state hₜ into the output yₜ.</td>
+      <td>Same W is used at every time step.</td>
+    </tr>
+  </table>
+
+  <h2>The Math Behind the RNN</h2>
+
+  <p>At each time step t, the RNN does two main things:</p>
+
+  <div class="equation">
+    <strong>1. Update the hidden state (memory):</strong><br>
+    \[
+    h_t = \tanh(U \cdot x_t + V \cdot h_{t-1})
+    \]
+  </div>
+
+  <div class="equation">
+    <strong>2. Produce an output:</strong><br>
+    \[
+    y_t = \text{softmax}(W \cdot h_t)
+    \]
+  </div>
+
+  <p>Where:</p>
+  <ul>
+    <li><strong>tanh</strong> is the activation function (keeps values between -1 and 1)</li>
+    <li><strong>softmax</strong> turns the output into probabilities (useful for predicting the next word)</li>
+    <li>h₀ is usually initialized to zeros (or a learned vector)</li>
+  </ul>
+
+  <div class="note" style="background:#f5f1e9; padding:14px; border-radius:8px; border-left:4px solid #d4a017; margin:20px 0;">
+    <strong>Key Idea:</strong> The same weights U, V, and W are used at every time step. This is what allows the RNN to handle sequences of <em>any length</em>.
+  </div>
+
+  <h2>A Short Numerical Example: Processing "How → To → Make"</h2>
+
+  <p>Let's walk through a very simplified numerical example. We'll use small vectors (size 2) to keep the math manageable.</p>
+
+  <p><strong>Assumptions for this toy example:</strong></p>
+  <ul>
+    <li>Hidden size = 2</li>
+    <li>We use random small weight matrices (in reality these are learned)</li>
+    <li>We show the calculations for the first two time steps in detail</li>
+  </ul>
+
+  <h3>Time Step 1: Input = "How" (x₁)</h3>
+
+  <div class="step">
+    <span class="step-number">1</span>
+    <strong>Input vector x₁</strong> (simplified embedding for "How")<br>
+    <div class="equation">
+      \[ x_1 = \begin{bmatrix} 1.0 \\ 0.0 \end{bmatrix} \]
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span>
+    <strong>Initialize h₀ = [0, 0]</strong> (no previous memory)
+  </div>
+
+  <div class="step">
+    <span class="step-number">3</span>
+    <strong>Compute hidden state h₁</strong><br>
+    <div class="equation">
+      \[ h_1 = \tanh(U \cdot x_1 + V \cdot h_0) \]
+    </div>
+    <p style="font-size:14px;">(In practice U and V are matrices. Here we show the idea.)</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">4</span>
+    <strong>Compute output y₁</strong> (prediction of the next word after "How")<br>
+    <div class="equation">
+      \[ y_1 = \text{softmax}(W \cdot h_1) \]
+    </div>
+    <p style="font-size:14px;">y₁ might give high probability to the word "To".</p>
+  </div>
+
+  <h3>Time Step 2: Input = "To" (x₂)</h3>
+
+  <div class="step">
+    <span class="step-number">1</span>
+    <strong>Input vector x₂</strong><br>
+    <div class="equation">
+      \[ x_2 = \begin{bmatrix} 0.0 \\ 1.0 \end{bmatrix} \] (embedding for "To")
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">2</span>
+    <strong>Update hidden state h₂ using h₁ (the memory from previous step)</strong><br>
+    <div class="equation">
+      \[ h_2 = \tanh(U \cdot x_2 + V \cdot h_1) \]
+    </div>
+    <p style="font-size:14px;">h₂ now contains information about both "How" and "To". This is the power of recurrence!</p>
+  </div>
+
+  <div class="step">
+    <span class="step-number">3</span>
+    <strong>Compute output y₂</strong><br>
+    <div class="equation">
+      \[ y_2 = \text{softmax}(W \cdot h_2) \]
+    </div>
+    <p style="font-size:14px;">y₂ might now predict "Make" with high probability.</p>
+  </div>
+
+  <h3>Time Step 3: Input = "Make" (x₃)</h3>
+
+  <p>Same process repeats:</p>
+  <div class="equation">
+    \[ h_3 = \tanh(U \cdot x_3 + V \cdot h_2) \]
+  </div>
+  <div class="equation">
+    \[ y_3 = \text{softmax}(W \cdot h_3) \]
+  </div>
+
+  <div class="result">
+    <strong>After processing "How To Make", the final hidden state h₃ contains a rich summary of the entire sequence.</strong><br>
+    This h₃ can be used for many tasks: predicting the next word, classifying the sentence, generating more text, etc.
+  </div>
+
+  <h2>Key Takeaways</h2>
+
+  <ul style="line-height: 1.9;">
+    <li><strong>hₜ (hidden state)</strong> = the memory of the network. It gets updated at every time step and carries information forward.</li>
+    <li><strong>yₜ (output)</strong> = what the network predicts or produces at step t.</li>
+    <li>The same weights (U, V, W) are reused at every time step → this allows the network to handle variable-length sequences.</li>
+    <li>Backpropagation Through Time (BPTT) is used to train RNNs — gradients flow backward through the entire sequence.</li>
+    <li>This architecture is the foundation for more advanced models like LSTMs and GRUs (which solve the "vanishing gradient" problem of basic RNNs).</li>
+  </ul>
+
+  <div class="summary-box">
+    <h3 style="margin-top:0;">Why this diagram is so powerful</h3>
+    <p>The simple structure shown in the video (h₁ → h₂ → h₃ with shared weights) allows neural networks to process sequences like sentences, music, video frames, or time series data while maintaining context across time.</p>
+  </div>
+
+  <div class="footer">
+    Based on the RNN explanation video • Created for clear understanding of the unfolded diagram
+  </div>
+
+</body>
+</html>

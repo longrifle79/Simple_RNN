@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neural Network — Full Backpropagation (Both Weights)</title>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    :root {
+      --bg: #faf8f3;
+      --text: #1f1a14;
+      --accent: #8B5E3C;
+      --light-accent: #EDE4D9;
+      --border: #d4ccc0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+    
+    h1 { font-size: 28px; font-weight: 600; color: #3f2a1d; margin-bottom: 8px; }
+    h2 { font-size: 20px; font-weight: 600; color: #3f2a1d; margin-top: 36px; margin-bottom: 12px; border-bottom: 2px solid var(--light-accent); padding-bottom: 6px; }
+    h3 { font-size: 16px; font-weight: 600; color: var(--accent); margin-top: 24px; margin-bottom: 8px; }
+    .subtitle { font-size: 15px; color: #7a7060; margin-bottom: 32px; }
+    
+    .intro-box, .summary-box {
+      background: white; border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 32px;
+    }
+    
+    .given-values {
+      background: #f5f1e9; border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 20px 0;
+    }
+    
+    .step { margin: 18px 0; padding-left: 8px; }
+    .step-number {
+      display: inline-block; background: var(--accent); color: white; font-size: 13px; font-weight: 600;
+      width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; margin-right: 10px; vertical-align: middle;
+    }
+    
+    .equation {
+      background: white; border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px 18px; margin: 14px 0; font-size: 15.5px; overflow-x: auto;
+    }
+    
+    .result {
+      background: #e8f0e3; border-left: 4px solid #5a8f4d;
+      padding: 12px 16px; margin: 16px 0; font-size: 15px;
+    }
+    
+    .interpretation {
+      background: #f9f5eb; border-left: 4px solid #d4a017;
+      padding: 14px 18px; margin: 18px 0; font-size: 14.5px;
+    }
+    
+    .footer {
+      margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border);
+      font-size: 12.5px; color: #8a7f70; text-align: center;
+    }
+
+    @media print {
+      .forward-end { page-break-after: always; }
+      h2#backprop { page-break-before: always; margin-top: 0 !important; padding-top: 0 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Simple Neural Network — Full Backpropagation</h1>
+  <p class="subtitle">Forward + Complete Backpropagation (updating both weights)</p>
+
+  <div class="intro-box">
+    <p><strong>Purpose:</strong> This is the most complete version of the tiny network example. We now perform <strong>full backpropagation</strong> and update <strong>both weights</strong> after every training example, exactly as it is done in real neural networks.</p>
+  </div>
+
+  <h2>Given Values</h2>
+  <div class="given-values">
+    <ul>
+      <li>Input: \( x = 0.5 \)</li>
+      <li>Initial \( w_{i \to h} = 0.4 \)</li>
+      <li>Initial \( w_{h_1 \to o} = 0.7 \)</li>
+      <li>Target: \( t = 0.8 \)</li>
+      <li>Learning rate: \( \alpha = 0.5 \)</li>
+    </ul>
+  </div>
+
+  <!-- ==================== EXAMPLE 1 ==================== -->
+  <h2>Example 1: \( x = 0.5 \), target \( t = 0.8 \)</h2>
+  <p><strong>Weights before update:</strong> \( w_{i \to h} = 0.4 \), \( w_{h_1 \to o} = 0.7 \)</p>
+
+  <h3>Forward Propagation</h3>
+  <div class="step"><span class="step-number">1</span> hidden_net = 0.4 × 0.5 = <strong>0.2000</strong></div>
+  <div class="step"><span class="step-number">2</span> \( o_{h_1} = \sigma(0.2000) \approx \mathbf{0.5498} \)</div>
+  <div class="step"><span class="step-number">3</span> output_net = 0.7 × 0.5498 ≈ <strong>0.3849</strong></div>
+  <div class="step"><span class="step-number">4</span> \( o = \sigma(0.3849) \approx \mathbf{0.5951} \)</div>
+  <div class="step"><span class="step-number">5</span> \( E = (0.8 - 0.5951)^2 \approx \mathbf{0.0420} \)</div>
+
+  <!-- Output weight gradient -->
+  <h3>Backpropagation — Hidden → Output Weight</h3>
+  <div class="equation">
+    \[\frac{\partial E}{\partial w_{h_1 \to o}} = \frac{\partial E}{\partial o} \cdot \frac{\partial o}{\partial z_k} \cdot \frac{\partial z_k}{\partial w_{h_1 \to o}}\]
+  </div>
+
+  <div class="step">
+    <span class="step-number">A</span>
+    <strong>How error changes with output</strong><br>
+    <div class="equation">
+      \[E = (t - o)^2 \quad \Rightarrow \quad \frac{\partial E}{\partial o} = -2(t - o) \approx -0.4098\]
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">B</span>
+    <strong>Sigmoid derivative</strong><br>
+    <div class="equation">
+      \[\frac{\partial o}{\partial z_k} = o(1 - o) \approx 0.2410\]
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">C</span>
+    <strong>How net input depends on weight</strong><br>
+    <div class="equation">
+      \[\frac{\partial z_k}{\partial w_{h_1 \to o}} = o_{h_1} \approx 0.5498\]
+    </div>
+  </div>
+
+  <div class="result">
+    <strong>Gradient for \( w_{h_1 \to o} \)</strong> ≈ <strong>−0.0543</strong><br>
+    Updated: \( w_{h_1 \to o} = 0.7 + 0.5 \times 0.0543 \approx \mathbf{0.7272} \)
+  </div>
+
+  <!-- Input weight gradient -->
+  <h3>Backpropagation — Input → Hidden Weight (Full Chain)</h3>
+  <p>We now continue the chain rule backward through the hidden node.</p>
+
+  <div class="equation">
+    \[\frac{\partial E}{\partial w_{i \to h}} = \frac{\partial E}{\partial o} \cdot \frac{\partial o}{\partial z_k} \cdot \frac{\partial z_k}{\partial o_{h_1}} \cdot \frac{\partial o_{h_1}}{\partial z_h} \cdot \frac{\partial z_h}{\partial w_{i \to h}}\]
+  </div>
+
+  <div class="step">
+    <span class="step-number">D</span>
+    <strong>How output_net depends on hidden activation</strong><br>
+    <div class="equation">
+      \[z_k = w_{h_1 \to o} \cdot o_{h_1} \quad \Rightarrow \quad \frac{\partial z_k}{\partial o_{h_1}} = w_{h_1 \to o} \approx 0.7\]
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">E</span>
+    <strong>Sigmoid derivative at hidden node</strong><br>
+    <div class="equation">
+      \[\frac{\partial o_{h_1}}{\partial z_h} = o_{h_1}(1 - o_{h_1}) \approx 0.2475\]
+    </div>
+  </div>
+
+  <div class="step">
+    <span class="step-number">F</span>
+    <strong>How hidden_net depends on input weight</strong><br>
+    <div class="equation">
+      \[z_h = w_{i \to h} \cdot x \quad \Rightarrow \quad \frac{\partial z_h}{\partial w_{i \to h}} = x = 0.5\]
+    </div>
+  </div>
+
+  <div class="result">
+    <strong>Gradient for \( w_{i \to h} \)</strong> ≈ <strong>−0.0086</strong><br>
+    Updated: \( w_{i \to h} = 0.4 + 0.5 \times 0.0086 \approx \mathbf{0.4043} \)
+  </div>
+
+  <!-- ==================== EXAMPLE 2 ==================== -->
+  <h2>Example 2: \( x = 0.2 \), target \( t = 0.4 \)</h2>
+  <p><strong>Weights before this example:</strong> \( w_{i \to h} \approx 0.4043 \), \( w_{h_1 \to o} \approx 0.7272 \)</p>
+
+  <h3>Forward Propagation (summary)</h3>
+  <div class="step">hidden_net ≈ 0.0809 → \( o_{h_1} \approx 0.5202 \)</div>
+  <div class="step">output_net ≈ 0.3784 → \( o \approx 0.5935 \)</div>
+  <div class="step">\( E \approx 0.0374 \)</div>
+
+  <h3>Backpropagation — Both Weights</h3>
+  <div class="result" style="margin-bottom:10px;">
+    <strong>Gradient \( w_{h_1 \to o} \)</strong> ≈ +0.0484 → Updated to <strong>0.7030</strong>
+  </div>
+  <div class="result">
+    <strong>Gradient \( w_{i \to h} \)</strong> ≈ +0.0031 → Updated to <strong>0.4028</strong>
+  </div>
+
+  <!-- ==================== EXAMPLE 3 ==================== -->
+  <h2>Example 3: \( x = 0.8 \), target \( t = 0.9 \)</h2>
+  <p><strong>Weights before this example:</strong> \( w_{i \to h} \approx 0.4028 \), \( w_{h_1 \to o} \approx 0.7030 \)</p>
+
+  <h3>Forward Propagation (summary)</h3>
+  <div class="step">hidden_net ≈ 0.3222 → \( o_{h_1} \approx 0.5799 \)</div>
+  <div class="step">output_net ≈ 0.4077 → \( o \approx 0.6005 \)</div>
+  <div class="step">\( E \approx 0.0897 \)</div>
+
+  <h3>Backpropagation — Both Weights</h3>
+  <div class="result" style="margin-bottom:10px;">
+    <strong>Gradient \( w_{h_1 \to o} \)</strong> ≈ −0.0834 → Updated to <strong>0.7447</strong>
+  </div>
+  <div class="result">
+    <strong>Gradient \( w_{i \to h} \)</strong> ≈ −0.0109 → Updated to <strong>0.4083</strong>
+  </div>
+
+  <!-- Final Summary -->
+  <div class="summary-box" style="margin-top:40px; background:#f5f1e9;">
+    <h2 style="margin-top:0; border:none; color:#5c4630;">Final Weights After One Epoch</h2>
+    
+    <table style="width:100%; border-collapse:collapse; margin:16px 0; font-size:15px;">
+      <tr style="background:#e8e0d0;">
+        <th style="padding:10px; border:1px solid #d4ccc0; text-align:left;">Weight</th>
+        <th style="padding:10px; border:1px solid #d4ccc0;">Initial</th>
+        <th style="padding:10px; border:1px solid #d4ccc0;">After Ex 1</th>
+        <th style="padding:10px; border:1px solid #d4ccc0;">After Ex 2</th>
+        <th style="padding:10px; border:1px solid #d4ccc0;">Final (After Ex 3)</th>
+      </tr>
+      <tr>
+        <td style="padding:10px; border:1px solid #d4ccc0;"><strong>\( w_{i \to h} \)</strong></td>
+        <td style="padding:10px; text-align:center; border:1px solid #d4ccc0;">0.4000</td>
+        <td style="padding:10px; text-align:center; border:1px solid #d4ccc0;">0.4043</td>
+        <td style="padding:10px; text-align:center; border:1px solid #d4ccc0;">0.4028</td>
+        <td style="padding:10px; text-align:center; border:1px solid #d4ccc0;"><strong>0.4083</strong></td>
+      </tr>
+      <tr style="background:#faf8f3;">
+        <td style="padding:10px; border:1px solid #d4ccc0;"><strong>\( w_{h_1 \to o} \)</strong></td>
+        <td style="padding:10px; text-align:center; border:1px solid #d4ccc0;">0.7000</td>
+        <td style="padding:10px; text-align:center; border:1px solid #d4ccc0;">0.7272</td>
+        <td style="padding:10px; text-align:center; border:1px solid #d4ccc0;">0.7030</td>
+        <td style="padding:10px; text-align:center; border:1px solid #d4ccc0;"><strong>0.7447</strong></td>
+      </tr>
+    </table>
+
+    <p><strong>Key Points:</strong></p>
+    <ul style="margin-left:20px;">
+      <li>Both weights are updated after <strong>every single training example</strong>.</li>
+      <li>The gradient for \( w_{i \to h} \) is smaller because the error signal is multiplied by more terms as it travels backward.</li>
+      <li>This is the complete backpropagation algorithm on a small network.</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Based on “Make Your Own Neural Network” by Tariq Rashid — Pages 93–97<br>
+    Full backpropagation example with both weights updated
+  </div>
+
+</body>
+</html>

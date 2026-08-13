@@ -21,6 +21,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/main.dir/src/activation_fuctions/Tanh/tanh.cpp.o.d"
   "CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o"
   "CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.o.d"
+  "CMakeFiles/main.dir/src/lstm_network.cpp.o"
+  "CMakeFiles/main.dir/src/lstm_network.cpp.o.d"
   "main"
   "main.pdb"
 )

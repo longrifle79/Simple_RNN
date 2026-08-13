@@ -1,0 +1,289 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=0.75in}
+
+% Colors (matching your previous documents)
+\definecolor{headingRed}{RGB}{178, 34, 34}
+\definecolor{labelBlue}{RGB}{0, 102, 204}
+
+\begin{document}
+
+\title{Simple LSTM Forward Pass with Full Intermediate Steps \\ (5 Time Steps)}
+\author{Gary Ewing}
+\date{}
+\maketitle
+
+This version expands the previous example with every single arithmetic operation shown explicitly for each gate and state update. All calculations use the exact expanded forward-pass equations.
+
+\subsection*{Weights (Randomly Initialized, Shared Across All Time Steps)}
+
+Using the naming convention from our previous work:
+
+\textcolor{headingRed}{\textbf{Forget gate}}
+\begin{itemize}[leftmargin=*]
+    \item $w_{hf} = 0.28$
+    \item $w_{xf} = -0.15$
+    \item $b_f = 0.05$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Input gate (sigmoid)}}
+\begin{itemize}[leftmargin=*]
+    \item $w_{hi1} = 0.35$
+    \item $w_{xi1} = 0.42$
+    \item $b_{i1} = 0.18$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Candidate}}
+\begin{itemize}[leftmargin=*]
+    \item $w_{hi2} = 0.22$
+    \item $w_{xi2} = 0.31$
+    \item $b_{i2} = 0.09$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Output gate}}
+\begin{itemize}[leftmargin=*]
+    \item $w_{ho} = 0.47$
+    \item $w_{xo} = 0.19$
+    \item $b_o = 0.26$
+\end{itemize}
+
+\subsection*{Input Sequence}
+
+\begin{itemize}[leftmargin=*]
+    \item $x_1 = 0.5$
+    \item $x_2 = 0.7$
+    \item $x_3 = 0.4$
+    \item $x_4 = 0.8$
+    \item $x_5 = 0.6$
+\end{itemize}
+
+\subsection*{Initial State}
+
+\begin{itemize}[leftmargin=*]
+    \item $h_0 = 0$
+    \item $C_0 = 0$
+\end{itemize}
+
+\subsection*{The Six Equations Used at Every Time Step}
+
+\begin{align*}
+f_t &= \sigma(w_{hf} \cdot h_{t-1} + w_{xf} \cdot x_t + b_f) \\
+i_t &= \sigma(w_{hi1} \cdot h_{t-1} + w_{xi1} \cdot x_t + b_{i1}) \\
+\tilde{C}_t &= \tanh(w_{hi2} \cdot h_{t-1} + w_{xi2} \cdot x_t + b_{i2}) \\
+o_t &= \sigma(w_{ho} \cdot h_{t-1} + w_{xo} \cdot x_t + b_o) \\
+C_t &= f_t \odot C_{t-1} + i_t \odot \tilde{C}_t \\
+h_t &= o_t \odot \tanh(C_t)
+\end{align*}
+
+(where $\sigma(z) = \frac{1}{1 + e^{-z}}$ and $\tanh$ is the standard hyperbolic tangent function).
+
+\subsection*{Full Forward Pass with Every Intermediate Step}
+
+\subsubsection*{Time Step $t = 1$}
+
+\textbf{Inputs:} $h_0 = 0$, $C_0 = 0$, $x_1 = 0.5$
+
+\textcolor{headingRed}{\textbf{Forget gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.28 \times 0 + (-0.15) \times 0.5 + 0.05 = -0.075 + 0.05 = -0.025$
+    \item $f_1 = \sigma(-0.025) = \frac{1}{1 + e^{0.025}} \approx \frac{1}{2.025315} \approx 0.4938$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Input gate (sigmoid)}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.35 \times 0 + 0.42 \times 0.5 + 0.18 = 0.21 + 0.18 = 0.39$
+    \item $i_1 = \sigma(0.39) \approx 0.5963$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Candidate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.22 \times 0 + 0.31 \times 0.5 + 0.09 = 0.155 + 0.09 = 0.245$
+    \item $\tilde{C}_1 = \tanh(0.245) \approx 0.2404$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Output gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.47 \times 0 + 0.19 \times 0.5 + 0.26 = 0.095 + 0.26 = 0.355$
+    \item $o_1 = \sigma(0.355) \approx 0.5878$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Cell state update}}
+\begin{itemize}[leftmargin=*]
+    \item $C_1 = (0.4938 \times 0) + (0.5963 \times 0.2404) = 0 + 0.1434 = 0.1434$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Hidden state update}}
+\begin{itemize}[leftmargin=*]
+    \item $h_1 = 0.5878 \times \tanh(0.1434) \approx 0.5878 \times 0.1426 = 0.0838$
+\end{itemize}
+
+\textbf{Updated after $t=1$:} $h_1 \approx 0.0838$, $C_1 \approx 0.1434$
+
+\subsubsection*{Time Step $t = 2$}
+
+\textbf{Inputs:} $h_1 \approx 0.0838$, $C_1 \approx 0.1434$, $x_2 = 0.7$
+
+\textcolor{headingRed}{\textbf{Forget gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.28 \times 0.0838 + (-0.15) \times 0.7 + 0.05 = -0.0315$
+    \item $f_2 = \sigma(-0.0315) \approx 0.4921$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Input gate (sigmoid)}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.35 \times 0.0838 + 0.42 \times 0.7 + 0.18 = 0.5033$
+    \item $i_2 = \sigma(0.5033) \approx 0.6232$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Candidate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.22 \times 0.0838 + 0.31 \times 0.7 + 0.09 = 0.3254$
+    \item $\tilde{C}_2 = \tanh(0.3254) \approx 0.3140$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Output gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.47 \times 0.0838 + 0.19 \times 0.7 + 0.26 = 0.4324$
+    \item $o_2 = \sigma(0.4324) \approx 0.6064$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Cell state update}}
+\begin{itemize}[leftmargin=*]
+    \item $C_2 = (0.4921 \times 0.1434) + (0.6232 \times 0.3140) = 0.2663$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Hidden state update}}
+\begin{itemize}[leftmargin=*]
+    \item $h_2 = 0.6064 \times \tanh(0.2663) \approx 0.1578$
+\end{itemize}
+
+\textbf{Updated after $t=2$:} $h_2 \approx 0.1578$, $C_2 \approx 0.2663$
+
+\subsubsection*{Time Step $t = 3$}
+
+\textbf{Inputs:} $h_2 \approx 0.1578$, $C_2 \approx 0.2663$, $x_3 = 0.4$
+
+\textcolor{headingRed}{\textbf{Forget gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.28 \times 0.1578 + (-0.15) \times 0.4 + 0.05 = 0.0342$
+    \item $f_3 = \sigma(0.0342) \approx 0.5086$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Input gate (sigmoid)}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.35 \times 0.1578 + 0.42 \times 0.4 + 0.18 = 0.4032$
+    \item $i_3 = \sigma(0.4032) \approx 0.5995$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Candidate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.22 \times 0.1578 + 0.31 \times 0.4 + 0.09 = 0.2487$
+    \item $\tilde{C}_3 = \tanh(0.2487) \approx 0.2440$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Output gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.47 \times 0.1578 + 0.19 \times 0.4 + 0.26 = 0.4102$
+    \item $o_3 = \sigma(0.4102) \approx 0.6011$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Cell state update}}
+\begin{itemize}[leftmargin=*]
+    \item $C_3 = (0.5086 \times 0.2663) + (0.5995 \times 0.2440) = 0.2817$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Hidden state update}}
+\begin{itemize}[leftmargin=*]
+    \item $h_3 = 0.6011 \times \tanh(0.2817) \approx 0.1649$
+\end{itemize}
+
+\textbf{Updated after $t=3$:} $h_3 \approx 0.1649$, $C_3 \approx 0.2817$
+
+\subsubsection*{Time Step $t = 4$}
+
+\textbf{Inputs:} $h_3 \approx 0.1649$, $C_3 \approx 0.2817$, $x_4 = 0.8$
+
+\textcolor{headingRed}{\textbf{Forget gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.28 \times 0.1649 + (-0.15) \times 0.8 + 0.05 = -0.0238$
+    \item $f_4 = \sigma(-0.0238) \approx 0.4940$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Input gate (sigmoid)}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.35 \times 0.1649 + 0.42 \times 0.8 + 0.18 = 0.5737$
+    \item $i_4 = \sigma(0.5737) \approx 0.6396$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Candidate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.22 \times 0.1649 + 0.31 \times 0.8 + 0.09 = 0.3743$
+    \item $\tilde{C}_4 = \tanh(0.3743) \approx 0.3580$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Output gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.47 \times 0.1649 + 0.19 \times 0.8 + 0.26 = 0.4895$
+    \item $o_4 = \sigma(0.4895) \approx 0.6200$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Cell state update}}
+\begin{itemize}[leftmargin=*]
+    \item $C_4 = (0.4940 \times 0.2817) + (0.6396 \times 0.3580) = 0.3681$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Hidden state update}}
+\begin{itemize}[leftmargin=*]
+    \item $h_4 = 0.6200 \times \tanh(0.3681) \approx 0.2184$
+\end{itemize}
+
+\textbf{Updated after $t=4$:} $h_4 \approx 0.2184$, $C_4 \approx 0.3681$
+
+\subsubsection*{Time Step $t = 5$}
+
+\textbf{Inputs:} $h_4 \approx 0.2184$, $C_4 \approx 0.3681$, $x_5 = 0.6$
+
+\textcolor{headingRed}{\textbf{Forget gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.28 \times 0.2184 + (-0.15) \times 0.6 + 0.05 = 0.0212$
+    \item $f_5 = \sigma(0.0212) \approx 0.5053$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Input gate (sigmoid)}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.35 \times 0.2184 + 0.42 \times 0.6 + 0.18 = 0.5084$
+    \item $i_5 = \sigma(0.5084) \approx 0.6244$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Candidate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.22 \times 0.2184 + 0.31 \times 0.6 + 0.09 = 0.3240$
+    \item $\tilde{C}_5 = \tanh(0.3240) \approx 0.3130$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Output gate}}
+\begin{itemize}[leftmargin=*]
+    \item Linear combination: $0.47 \times 0.2184 + 0.19 \times 0.6 + 0.26 = 0.4766$
+    \item $o_5 = \sigma(0.4766) \approx 0.6169$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Cell state update}}
+\begin{itemize}[leftmargin=*]
+    \item $C_5 = (0.5053 \times 0.3681) + (0.6244 \times 0.3130) = 0.3814$
+\end{itemize}
+
+\textcolor{headingRed}{\textbf{Hidden state update}}
+\begin{itemize}[leftmargin=*]
+    \item $h_5 = 0.6169 \times \tanh(0.3814) \approx 0.2246$
+\end{itemize}
+
+\textbf{Final updated values after $t=5$:} $h_5 \approx 0.2246$, $C_5 \approx 0.3814$
+
+This completes the full forward pass. Every intermediate linear combination, activation, and state update has been shown with explicit arithmetic for all 5 time steps using the exact equations we derived. The states $h_t$ and $C_t$ are updated after each step and carried forward to the next time step.
+
+\end{document}

@@ -24,6 +24,7 @@ set(OLD_GLOB
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Sigmoid/sigmoid.cpp"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/Tanh/tanh.cpp"
   "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/activation_fuctions/activation_functions.cpp"
+  "/home/gary/Desktop/Simple_RNN/LSTM_unit/src/lstm_network.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")

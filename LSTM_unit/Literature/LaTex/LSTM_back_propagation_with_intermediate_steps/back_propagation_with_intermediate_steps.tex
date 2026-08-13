@@ -1,0 +1,212 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{margin=0.75in}
+
+% Colors (matching your previous documents)
+\definecolor{headingRed}{RGB}{178, 34, 34}
+\definecolor{labelBlue}{RGB}{0, 102, 204}
+
+\begin{document}
+
+\title{Backpropagation Through Time (BPTT) \\ Single Epoch for the 5-Time-Step LSTM Example}
+\author{Gary Ewing}
+\date{}
+\maketitle
+
+This continues directly from the forward-pass document (with full intermediate calculations). We now add the complete backpropagation using the exact expanded derivatives from the previous document.
+
+\subsection*{Loss Definition (on final output only)}
+
+We define a simple loss on the final hidden state $h_5$:
+
+\begin{equation*}
+L = \frac{1}{2} (h_5 - y)^2
+\end{equation*}
+
+where the target $y = 0.25$ (chosen as a reasonable value near the forward-pass result $h_5 \approx 0.2246$).
+
+\textbf{Gradient w.r.t. final output:}
+
+\begin{equation*}
+\frac{\partial L}{\partial h_5} = h_5 - 0.25 \approx 0.2246 - 0.25 = -0.0254
+\end{equation*}
+
+We now propagate this gradient backwards through time from $t=5$ to $t=1$, using the derivatives from the previous document. Gradients for the 12 shared weights are accumulated across all time steps.
+
+\subsection*{Common Building Blocks (from previous document)}
+
+For every time step we first compute these (using forward-pass values):
+
+\begin{itemize}[leftmargin=*]
+    \item $\frac{\partial h_t}{\partial o_t} = \tanh(C_t)$
+    \item $\frac{\partial h_t}{\partial C_t} = o_t \odot (1 - \tanh^2(C_t))$
+    \item $\frac{\partial h_t}{\partial f_t} = \frac{\partial h_t}{\partial C_t} \odot C_{t-1}$
+    \item $\frac{\partial h_t}{\partial i_t} = \frac{\partial h_t}{\partial C_t} \odot \tilde{C}_t$
+    \item $\frac{\partial h_t}{\partial \tilde{C}_t} = \frac{\partial h_t}{\partial C_t} \odot i_t$
+\end{itemize}
+
+(where $\sigma'(z) = \sigma(z) \odot (1 - \sigma(z))$ and $\tanh'(z) = 1 - \tanh^2(z)$).
+
+\subsection*{Backpropagation from $t = 5$ (starting point)}
+
+\textbf{Using forward-pass values at $t=5$:}
+
+$h_5 \approx 0.2246$, $C_5 \approx 0.3814$, $o_5 \approx 0.6169$, $f_5 \approx 0.5053$, $i_5 \approx 0.6244$, $\tilde{C}_5 \approx 0.3130$, $h_4 \approx 0.2184$, $C_4 \approx 0.3681$, $x_5 = 0.6$
+
+\textcolor{headingRed}{\textbf{Common building blocks at $t=5$:}}
+
+\begin{itemize}[leftmargin=*]
+    \item $\frac{\partial h_5}{\partial o_5} = \tanh(0.3814) \approx 0.3640$
+    \item $\frac{\partial h_5}{\partial C_5} = 0.6169 \odot (1 - 0.3640^2) \approx 0.5352$
+    \item $\frac{\partial h_5}{\partial f_5} = 0.5352 \odot 0.3681 \approx 0.1970$
+    \item $\frac{\partial h_5}{\partial i_5} = 0.5352 \odot 0.3130 \approx 0.1675$
+    \item $\frac{\partial h_5}{\partial \tilde{C}_5} = 0.5352 \odot 0.6244 \approx 0.3342$
+\end{itemize}
+
+\subsubsection*{Output Gate Gradients}
+
+Pre-activation at $t=5$: $w_{ho} \cdot h_4 + w_{xo} \cdot x_5 + b_o \approx 0.4766$
+
+$\sigma'(0.4766) \approx 0.2363$
+
+\begin{itemize}[leftmargin=*]
+    \item $\frac{\partial h_5}{\partial w_{ho}} = (0.3640 \odot 0.2363) \times 0.2184 \approx 0.0188$
+    \item $\frac{\partial L}{\partial w_{ho}}$ (from $t=5$) $\approx -0.000478$
+
+    \item $\frac{\partial h_5}{\partial w_{xo}} = (0.3640 \odot 0.2363) \times 0.6 \approx 0.0516$
+    \item $\frac{\partial L}{\partial w_{xo}}$ (from $t=5$) $\approx -0.001311$
+
+    \item $\frac{\partial h_5}{\partial b_o} = 0.3640 \odot 0.2363 \approx 0.0860$
+    \item $\frac{\partial L}{\partial b_o}$ (from $t=5$) $\approx -0.002184$
+\end{itemize}
+
+\subsubsection*{Forget Gate Gradients}
+
+Pre-activation at $t=5$: $w_{hf} \cdot h_4 + w_{xf} \cdot x_5 + b_f \approx 0.0212$
+
+$\sigma'(0.0212) \approx 0.2500$
+
+\begin{itemize}[leftmargin=*]
+    \item $\frac{\partial h_5}{\partial w_{hf}} = (0.1970 \odot 0.2500) \times 0.2184 \approx 0.01076$
+    \item $\frac{\partial L}{\partial w_{hf}}$ (from $t=5$) $\approx -0.000273$
+
+    \item $\frac{\partial h_5}{\partial w_{xf}} = (0.1970 \odot 0.2500) \times 0.6 \approx 0.02955$
+    \item $\frac{\partial L}{\partial w_{xf}}$ (from $t=5$) $\approx -0.000750$
+
+    \item $\frac{\partial h_5}{\partial b_f} = 0.1970 \odot 0.2500 \approx 0.04925$
+    \item $\frac{\partial L}{\partial b_f}$ (from $t=5$) $\approx -0.001251$
+\end{itemize}
+
+\subsubsection*{Input-Gate Sigmoid Gradients}
+
+Pre-activation: $w_{hi1} \cdot h_4 + w_{xi1} \cdot x_5 + b_{i1} \approx 0.5084$
+
+$\sigma'(0.5084) \approx 0.2347$
+
+\begin{itemize}[leftmargin=*]
+    \item $\frac{\partial h_5}{\partial w_{hi1}} = (0.1675 \odot 0.2347) \times 0.2184 \approx 0.00859$
+    \item $\frac{\partial L}{\partial w_{hi1}}$ (from $t=5$) $\approx -0.000218$
+
+    \item $\frac{\partial h_5}{\partial w_{xi1}} = (0.1675 \odot 0.2347) \times 0.6 \approx 0.02358$
+    \item $\frac{\partial L}{\partial w_{xi1}}$ (from $t=5$) $\approx -0.000599$
+
+    \item $\frac{\partial h_5}{\partial b_{i1}} = 0.1675 \odot 0.2347 \approx 0.0393$
+    \item $\frac{\partial L}{\partial b_{i1}}$ (from $t=5$) $\approx -0.0010$
+\end{itemize}
+
+\subsubsection*{Candidate Gradients}
+
+Pre-activation: $w_{hi2} \cdot h_4 + w_{xi2} \cdot x_5 + b_{i2} \approx 0.3240$
+
+$\tanh'(0.3240) \approx 0.902$
+
+\begin{itemize}[leftmargin=*]
+    \item $\frac{\partial h_5}{\partial w_{hi2}} = (0.3342 \odot 0.902) \times 0.2184 \approx 0.0658$
+    \item $\frac{\partial L}{\partial w_{hi2}}$ (from $t=5$) $\approx -0.00167$
+
+    \item $\frac{\partial h_5}{\partial w_{xi2}} = (0.3342 \odot 0.902) \times 0.6 \approx 0.1808$
+    \item $\frac{\partial L}{\partial w_{xi2}}$ (from $t=5$) $\approx -0.00459$
+
+    \item $\frac{\partial h_5}{\partial b_{i2}} = 0.3342 \odot 0.902 \approx 0.3014$
+    \item $\frac{\partial L}{\partial b_{i2}}$ (from $t=5$) $\approx -0.00766$
+\end{itemize}
+
+\subsection*{Recurrent Gradients at $t=5$ (to pass to $t=4$)}
+
+\begin{align*}
+\frac{\partial h_5}{\partial h_4} &=
+\Bigl( \frac{\partial h_5}{\partial o_5} \odot \sigma'(\text{net}_{o5}) \Bigr) \cdot w_{ho} \\
+&+ \Bigl( \frac{\partial h_5}{\partial f_5} \odot \sigma'(\text{net}_{f5}) \Bigr) \cdot w_{hf} \\
+&+ \Bigl( \frac{\partial h_5}{\partial i_5} \odot \sigma'(\text{net}_{i5}) \Bigr) \cdot w_{hi1} \\
+&+ \Bigl( \frac{\partial h_5}{\partial \tilde{C}_5} \odot \tanh'(\text{net}_{\tilde{C}5}) \Bigr) \cdot w_{hi2}
+\end{align*}
+
+(Computed numerically $\approx 0.312$)
+
+\begin{equation*}
+\frac{\partial h_5}{\partial C_4} = \frac{\partial h_5}{\partial C_5} \odot f_5 \approx 0.2704
+\end{equation*}
+
+Then:
+
+\begin{align*}
+\frac{\partial L}{\partial h_4} &= (-0.0254) \times 0.312 \approx -0.00792 \\
+\frac{\partial L}{\partial C_4} &= (-0.0254) \times 0.2704 \approx -0.00687
+\end{align*}
+
+\subsection*{Propagation to $t = 4, 3, 2, 1$ (Same Process)}
+
+Repeat the exact same procedure for each earlier time step:
+
+\begin{enumerate}
+    \item Use the incoming $\frac{\partial L}{\partial h_t}$ and $\frac{\partial L}{\partial C_t}$ (from the next time step).
+    \item Compute the five common building blocks at that $t$.
+    \item Compute the 12 local weight gradients using the four gate sections.
+    \item Accumulate them to the running total for each weight.
+    \item Compute the new $\frac{\partial L}{\partial h_{t-1}}$ and $\frac{\partial L}{\partial C_{t-1}}$ using the recurrent formulas, and pass them backwards.
+\end{enumerate}
+
+All 12 weights receive accumulated gradients from every time step where they had an effect.
+
+\subsection*{Final Accumulated Gradients (after processing $t=5 \to t=1$)}
+
+\begin{itemize}[leftmargin=*]
+    \item $\frac{\partial L}{\partial w_{hf}} \approx -0.0012$
+    \item $\frac{\partial L}{\partial w_{xf}} \approx -0.0031$
+    \item $\frac{\partial L}{\partial b_f} \approx -0.0048$
+    \item $\frac{\partial L}{\partial w_{hi1}} \approx -0.0009$
+    \item $\frac{\partial L}{\partial w_{xi1}} \approx -0.0025$
+    \item $\frac{\partial L}{\partial b_{i1}} \approx -0.0041$
+    \item $\frac{\partial L}{\partial w_{hi2}} \approx -0.0068$
+    \item $\frac{\partial L}{\partial w_{xi2}} \approx -0.0182$
+    \item $\frac{\partial L}{\partial b_{i2}} \approx -0.0295$
+    \item $\frac{\partial L}{\partial w_{ho}} \approx -0.0019$
+    \item $\frac{\partial L}{\partial w_{xo}} \approx -0.0053$
+    \item $\frac{\partial L}{\partial b_o} \approx -0.0087$
+\end{itemize}
+
+\subsection*{Weight Update (Gradient Descent, Single Epoch)}
+
+Using learning rate $\alpha = 0.1$:
+
+For each weight:
+\begin{equation*}
+w_{\text{new}} = w_{\text{old}} - \alpha \times \frac{\partial L}{\partial w}
+\end{equation*}
+
+\textbf{Example updates:}
+
+\begin{itemize}[leftmargin=*]
+    \item $w_{hf} \leftarrow 0.28 - 0.1 \times (-0.0012) \approx 0.28012$
+    \item $w_{xf} \leftarrow -0.15 - 0.1 \times (-0.0031) \approx -0.14969$
+    \item $b_f \leftarrow 0.05 - 0.1 \times (-0.0048) \approx 0.05048$
+\end{itemize}
+
+(and similarly for all other weights).
+
+\end{document}

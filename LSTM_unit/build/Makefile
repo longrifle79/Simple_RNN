@@ -394,6 +394,30 @@ src/activation_fuctions/activation_functions.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/activation_fuctions/activation_functions.cpp.s
 .PHONY : src/activation_fuctions/activation_functions.cpp.s
 
+src/lstm_network.o: src/lstm_network.cpp.o
+.PHONY : src/lstm_network.o
+
+# target to build an object file
+src/lstm_network.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/lstm_network.cpp.o
+.PHONY : src/lstm_network.cpp.o
+
+src/lstm_network.i: src/lstm_network.cpp.i
+.PHONY : src/lstm_network.i
+
+# target to preprocess a source file
+src/lstm_network.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/lstm_network.cpp.i
+.PHONY : src/lstm_network.cpp.i
+
+src/lstm_network.s: src/lstm_network.cpp.s
+.PHONY : src/lstm_network.s
+
+# target to generate assembly for a file
+src/lstm_network.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/src/lstm_network.cpp.s
+.PHONY : src/lstm_network.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -436,6 +460,9 @@ help:
 	@echo "... src/activation_fuctions/activation_functions.o"
 	@echo "... src/activation_fuctions/activation_functions.i"
 	@echo "... src/activation_fuctions/activation_functions.s"
+	@echo "... src/lstm_network.o"
+	@echo "... src/lstm_network.i"
+	@echo "... src/lstm_network.s"
 .PHONY : help
 
 

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSTM Backprop — all weights and biases (t-1), with path diagrams</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+:root{--bg:#faf8f3;--text:#1f1a14;--accent:#8B5E3C;--light:#EDE4D9;--bdr:#d4ccc0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+ background:var(--bg);color:var(--text);line-height:1.75;max-width:900px;margin:40px auto;padding:0 24px;}
+h1{font-size:27px;font-weight:600;color:#3f2a1d;margin-bottom:6px;}
+h2{font-size:20px;font-weight:600;color:#3f2a1d;margin-top:38px;margin-bottom:10px;border-bottom:2px solid var(--light);padding-bottom:6px;}
+h3{font-size:16px;font-weight:600;color:var(--accent);margin-top:24px;margin-bottom:7px;}
+.sub{font-size:15px;color:#7a7060;margin-bottom:28px;}
+p{margin-bottom:11px;}
+.intro{background:white;border:1px solid var(--bdr);border-radius:10px;padding:20px 24px;margin-bottom:26px;}
+.gv{background:#f5f1e9;border:1px solid var(--bdr);border-radius:10px;padding:16px 20px;margin:18px 0;}
+.gv h3{margin-top:0;color:#5c4630;}
+.gv ul{margin:10px 0 0;padding-left:20px;} .gv li{margin:6px 0;font-size:15px;}
+.eq{background:white;border:1px solid var(--bdr);border-radius:8px;padding:13px 18px;margin:11px 0;overflow-x:auto;}
+.d{background:#f5eaf8;border:1px solid #c8a8e0;border-radius:8px;padding:13px 20px;margin:8px 0 13px;overflow-x:auto;}
+.dl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#7b2d8b;margin-bottom:7px;font-weight:600;}
+.d.o{background:#fdf0ee;border-color:#e8b0a8;} .d.o .dl{color:#c0392b;}
+.d.c{background:#fef3c7;border-color:#e0b860;} .d.c .dl{color:#b45309;}
+.d.i1{background:#e8f1f8;border-color:#a8c8e8;} .d.i1 .dl{color:#2c5f8a;}
+.d.i2{background:#f5eaf8;border-color:#c8a8e0;} .d.i2 .dl{color:#7b2d8b;}
+.d.f{background:#f2f2ee;border-color:#c9c4ba;} .d.f .dl{color:#8a8577;}
+.res{background:#e8f0e3;border-left:4px solid #5a8f4d;padding:11px 16px;margin:14px 0;font-size:15px;}
+.int{background:#f9f5eb;border-left:4px solid #d4a017;padding:13px 17px;margin:16px 0;font-size:14.5px;}
+.nb{background:#eef4fb;border-left:4px solid #4a7fba;padding:13px 17px;margin:16px 0;font-size:14.5px;}
+.warn{background:#fff7ed;border-left:4px solid #ea580c;padding:13px 17px;margin:16px 0;font-size:14.5px;}
+.sh{border-radius:8px;padding:10px 18px;margin:32px 0 12px;font-size:17px;font-weight:600;color:white;background:#7b2d8b;}
+.sh.o{background:#c0392b;} .sh.c{background:#b45309;} .sh.i1{background:#2c5f8a;}
+.sh.i2{background:#7b2d8b;} .sh.f{background:#8a8577;} .sh.u{background:#3f2a1d;}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;margin:14px 0;}
+.tbl th{background:#3f2a1d;color:white;padding:8px 12px;text-align:center;font-size:13px;}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--bdr);text-align:center;font-family:monospace;}
+.tbl tr.or td{background:#fdf0ee;} .tbl tr.i1r td{background:#e8f1f8;}
+.tbl tr.i2r td{background:#f5eaf8;} .tbl tr.fr td{background:#f2f2ee;color:#8a8577;}
+.diagcap{text-align:center;font-size:12.5px;color:#7a6050;font-style:italic;margin:4px 0 18px;}
+.footer{margin-top:54px;padding-top:18px;border-top:1px solid var(--bdr);font-size:12.5px;color:#8a7f70;text-align:center;}
+</style></head><body>
+
+<h1>LSTM Backpropagation &mdash; Updating Every Weight and Bias</h1>
+<p class="sub">All twelve parameters at time step t&minus;1, using the same path-diagram approach: every gradient is a path, and every path segment is one derivative.</p>
+
+<div class="intro">
+<p><strong>About this document.</strong> The previous document followed a single weight, \(w_{xo_{t\text{-}1}}\), along its path to the loss. This one updates <em>all twelve parameters</em> &mdash; and the key to keeping it simple is that we do not compute twelve separate long chains. The paths <strong>share segments</strong>. All twelve start with the same first step. Six of them share the entire journey down to the cell state. Within each gate, the three parameters differ only in the <em>very last</em> factor. So the real work is: a few shared trunk computations, then short branch-specific endings.</p>
+<p><strong>How to read it:</strong> the map below shows every path at once. Then we compute the shared trunk, then walk each branch. Every number gets derived exactly once and reused.</p>
+</div>
+
+<div class="gv">
+<h3>Forward-pass values (all fixed, known data from the t&minus;1 pass)</h3>
+<ul>
+<li>Inputs: \(x_{t\text{-}1}=0.5\), &nbsp; \(h_{t\text{-}2}=0\), &nbsp; \(c_{t\text{-}2}=0\)</li>
+<li>Forget gate: \(\text{net}_f=0.35\), \(f_{t\text{-}1}=0.5866\)</li>
+<li>&ldquo;% Potential Memory&rdquo; (sigmoid): \(\text{net}_{i1}=-0.05\), \(i1_{t\text{-}1}=0.4875\)</li>
+<li>&ldquo;Potential Long Memory&rdquo; (tanh): \(\text{net}_{i2}=0.65\), \(i2_{t\text{-}1}=0.5717\)</li>
+<li>Cell state: \(c_{t\text{-}1} = f\cdot c_{t\text{-}2} + i1\cdot i2 = 0.2787\), &nbsp; \(\tanh(c_{t\text{-}1})=0.2717\)</li>
+<li>Output gate: \(\text{net}_o=0.1\), \(o_{t\text{-}1}=0.5250\), &nbsp; output \(h_{t\text{-}1}=0.1426\)</li>
+<li>Target \(=0.8\), loss \(L=(0.8-0.1426)^2=0.4321\), learning rate \(\alpha=0.1\)</li>
+</ul>
+</div>
+
+<h2>The Map &mdash; All Twelve Paths at Once</h2>
+
+<p>Read this backward from the loss (right to left), the direction the gradient actually travels. Every parameter&rsquo;s path begins with the same segment (L back to h). Then it splits: the output gate&rsquo;s three parameters branch upward; everything else rides down through \(\tanh(c)\) into the cell state, where the path splits three ways &mdash; one branch per block that built \(c_{t\text{-}1}\).</p>
+
+<svg viewBox="0 0 940 560" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="mm-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="mm-gr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#9a9084" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470" y="30" text-anchor="middle" font-family="sans-serif" font-size="13.5" fill="#3f2a1d" font-weight="700">THE MAP: EVERY PARAMETER'S PATH TO THE LOSS — DRAWN BACKWARD</text>
+<text x="470" y="50" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#7a7060" font-weight="normal">all twelve parameters share the first red segment; the paths then branch — every branch point is one more chain-rule factor</text>
+<rect x="800" y="140" width="110" height="56" rx="9" fill="#3f2a1d" stroke="#3f2a1d" stroke-width="2"/>
+<text x="855" y="164" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="normal">Loss</text>
+<text x="855" y="182" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#fff" font-weight="700">L = 0.4321</text>
+<rect x="620" y="140" width="116" height="56" rx="9" fill="#fce8f0" stroke="#c2185b" stroke-width="2"/>
+<text x="678" y="158" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#c2185b" font-weight="normal">output</text>
+<text x="672" y="176" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c2185b" font-weight="700">h</text>
+<text x="681" y="180" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#c2185b" font-weight="700">t-1</text>
+<text x="678" y="190" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#c2185b" font-weight="normal">= 0.1426</text>
+<line x1="795" y1="168" x2="742" y2="168" stroke="#c0392b" stroke-width="3" marker-end="url(#mm-b)"/>
+<text x="769" y="156" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#c0392b" font-weight="700">shared</text>
+<text x="769" y="186" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="700">∂L/∂h = −1.3147</text>
+<rect x="420" y="68" width="116" height="56" rx="9" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2"/>
+<text x="478" y="86" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1f5f8b" font-weight="normal">Output gate</text>
+<text x="472" y="104" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1f5f8b" font-weight="700">o</text>
+<text x="481" y="108" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#1f5f8b" font-weight="700">t-1</text>
+<text x="478" y="118" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1f5f8b" font-weight="normal">= 0.5250</text>
+<line x1="618" y1="150" x2="540" y2="110" stroke="#c0392b" stroke-width="2.6" marker-end="url(#mm-b)"/>
+<text x="600" y="116" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#922b21" font-weight="normal">× tanh(c)</text>
+<rect x="230" y="68" width="120" height="56" rx="9" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+<text x="290" y="86" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#c0392b" font-weight="normal">weighted sum</text>
+<text x="283" y="104" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#c0392b" font-weight="700">net</text>
+<text x="302" y="108" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#c0392b" font-weight="700">o</text>
+<text x="290" y="118" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#c0392b" font-weight="normal">= 0.1</text>
+<line x1="416" y1="96" x2="354" y2="96" stroke="#c0392b" stroke-width="2.6" marker-end="url(#mm-b)"/>
+<text x="385" y="86" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#922b21" font-weight="normal">σ′</text>
+<rect x="40" y="60" width="150" height="72" rx="9" fill="#eafaf1" stroke="#1e8449" stroke-width="2"/>
+<text x="115" y="80" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#1e8449" font-weight="700">OUTPUT GATE params</text>
+<text x="115" y="98" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1e8449" font-weight="700">w_xo   w_ho   b_o</text>
+<text x="115" y="116" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#1e8449" font-weight="normal">× x      × h      × 1</text>
+<line x1="226" y1="96" x2="194" y2="96" stroke="#c0392b" stroke-width="2.6" marker-end="url(#mm-b)"/>
+<rect x="420" y="240" width="116" height="56" rx="9" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+<text x="478" y="258" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7e5109" font-weight="normal">cell state</text>
+<text x="473" y="276" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#7e5109" font-weight="700">c</text>
+<text x="481" y="280" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#7e5109" font-weight="700">t-1</text>
+<text x="478" y="290" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7e5109" font-weight="normal">= 0.2787</text>
+<line x1="622" y1="190" x2="542" y2="258" stroke="#c0392b" stroke-width="2.6" marker-end="url(#mm-b)"/>
+<text x="608" y="236" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#922b21" font-weight="normal">× o, then tanh′</text>
+<text x="590" y="252" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="700">∂L/∂c = −0.6393</text>
+<rect x="230" y="196" width="120" height="56" rx="9" fill="#eafaf1" stroke="#9a9084" stroke-width="2" opacity="0.55"/>
+<text x="290" y="214" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal" opacity="0.8">forget gate</text>
+<text x="285" y="232" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#9a9084" font-weight="700" opacity="0.8">f</text>
+<text x="292" y="236" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#9a9084" font-weight="700" opacity="0.8">t-1</text>
+<text x="290" y="246" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="normal" opacity="0.8">= 0.5866</text>
+<line x1="416" y1="252" x2="354" y2="232" stroke="#9a9084" stroke-width="2.2" marker-end="url(#mm-gr)" opacity="0.7"/>
+<text x="398" y="222" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#9a9084" font-weight="normal" opacity="0.8">× c</text>
+<text x="408" y="226" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#9a9084" font-weight="normal" opacity="0.8">t-2</text>
+<text x="398" y="210" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#9a9084" font-weight="700" opacity="0.9">= 0 !</text>
+<rect x="40" y="196" width="150" height="56" rx="9" fill="#f5f1e9" stroke="#9a9084" stroke-width="2" opacity="0.55"/>
+<text x="115" y="214" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#9a9084" font-weight="700" opacity="0.8">FORGET params</text>
+<text x="115" y="232" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#9a9084" font-weight="700" opacity="0.8">w_xf   w_hf   b_f</text>
+<text x="115" y="246" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#9a9084" font-weight="normal" opacity="0.8">all gradients = 0</text>
+<line x1="226" y1="224" x2="194" y2="224" stroke="#9a9084" stroke-width="2.2" marker-end="url(#mm-gr)" opacity="0.7"/>
+<rect x="230" y="300" width="120" height="56" rx="9" fill="#e8f1f8" stroke="#2c5f8a" stroke-width="2"/>
+<text x="290" y="316" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#2c5f8a" font-weight="normal">% Potential Mem.</text>
+<text x="283" y="334" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#2c5f8a" font-weight="700">i1</text>
+<text x="297" y="338" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#2c5f8a" font-weight="700">t-1</text>
+<text x="290" y="350" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#2c5f8a" font-weight="normal">= 0.4875</text>
+<line x1="416" y1="282" x2="354" y2="318" stroke="#c0392b" stroke-width="2.6" marker-end="url(#mm-b)"/>
+<text x="400" y="312" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#922b21" font-weight="normal">× i2</text>
+<rect x="40" y="300" width="150" height="56" rx="9" fill="#e8f1f8" stroke="#2c5f8a" stroke-width="2"/>
+<text x="115" y="318" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#2c5f8a" font-weight="700">I1 params (sigmoid)</text>
+<text x="115" y="336" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#2c5f8a" font-weight="700">w_xi1  w_hi1  b_i1</text>
+<text x="115" y="350" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#2c5f8a" font-weight="normal">σ′ then × x, × h, × 1</text>
+<line x1="226" y1="328" x2="194" y2="328" stroke="#c0392b" stroke-width="2.6" marker-end="url(#mm-b)"/>
+<rect x="230" y="404" width="120" height="56" rx="9" fill="#f5eaf8" stroke="#7b2d8b" stroke-width="2"/>
+<text x="290" y="420" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#7b2d8b" font-weight="normal">Potential Long Mem.</text>
+<text x="283" y="438" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#7b2d8b" font-weight="700">i2</text>
+<text x="297" y="442" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#7b2d8b" font-weight="700">t-1</text>
+<text x="290" y="454" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7b2d8b" font-weight="normal">= 0.5717</text>
+<line x1="438" y1="298" x2="340" y2="410" stroke="#c0392b" stroke-width="2.6" marker-end="url(#mm-b)"/>
+<text x="410" y="368" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#922b21" font-weight="normal">× i1</text>
+<rect x="40" y="404" width="150" height="56" rx="9" fill="#f5eaf8" stroke="#7b2d8b" stroke-width="2"/>
+<text x="115" y="422" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#7b2d8b" font-weight="700">I2 params (tanh)</text>
+<text x="115" y="440" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">w_xi2  w_hi2  b_i2</text>
+<text x="115" y="454" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#7b2d8b" font-weight="normal">tanh′ then × x, × h, × 1</text>
+<line x1="226" y1="432" x2="194" y2="432" stroke="#c0392b" stroke-width="2.6" marker-end="url(#mm-b)"/>
+<text x="470" y="520" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#7a7060" font-weight="normal">red arrows point the way the gradient flows (from the loss outward). The forget branch is grayed: it is multiplied by c_t-2 = 0, so its entire subtree receives zero gradient this step.</text>
+</svg>
+<p class="diagcap">The full gradient map. Twelve parameters, but only a handful of distinct segments &mdash; the trunk is shared, and each branch point contributes exactly one chain-rule factor. The forget branch is grayed out: its very first factor is \(c_{t\text{-}2}=0\), which zeroes everything downstream of it.</p>
+
+<!-- ═══════════ SHARED STEP ═══════════ -->
+<div class="sh">The Shared First Step &mdash; \(\partial L / \partial h_{t\text{-}1}\) (used by all twelve parameters)</div>
+
+<p>Every parameter influences the loss only through the output \(h_{t\text{-}1}\), so every path starts with the same derivative &mdash; computed once, reused twelve times:</p>
+<div class="d">
+<div class="dl">Symbolic, then numbers</div>
+\[ \frac{\partial L}{\partial h_{t\text{-}1}} = -2\,(\text{target} - h_{t\text{-}1}) = -2\,(0.8-0.1426) = \mathbf{-1.3147} \]
+</div>
+<div class="res">Negative: the output was too low, so anything that raises \(h\) lowers the loss. Keep \(-1.3147\) in hand &mdash; it is the first factor of every chain below.</div>
+
+<!-- ═══════════ OUTPUT GATE ═══════════ -->
+<div class="sh o">Branch 1 &mdash; The Output Gate: \(w_{xo_{t\text{-}1}}\), \(w_{ho_{t\text{-}1}}\), \(b_{o_{t\text{-}1}}\)</div>
+
+<svg viewBox="0 0 940 430" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="po-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="po-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="po-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#8a7f70" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470.0" y="30" text-anchor="middle" font-family="sans-serif" font-size="13.5" fill="#3f2a1d" font-weight="700">OUTPUT-GATE PATH — shared trunk + two segments + last-segment swap</text>
+<rect x="7.0" y="120.0" width="126" height="60" rx="9" fill="#eafaf1" stroke="#1e8449" stroke-width="2"/>
+<text x="70.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1e8449" font-weight="normal">the 3 params</text>
+<text x="60.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1e8449" font-weight="700">w</text>
+<text x="69.0" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#1e8449" font-weight="700">xo ...</text>
+<text x="70.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1e8449" font-weight="normal">(see below)</text>
+<rect x="207.0" y="120.0" width="126" height="60" rx="9" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+<text x="270.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#c0392b" font-weight="normal">weighted sum</text>
+<text x="260.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">net</text>
+<text x="279.0" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#c0392b" font-weight="700">o</text>
+<text x="270.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="normal">= 0.1</text>
+<rect x="407.0" y="120.0" width="126" height="60" rx="9" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="2"/>
+<text x="470.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#1f5f8b" font-weight="normal">Output gate</text>
+<text x="460.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#1f5f8b" font-weight="700">o</text>
+<text x="469.0" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#1f5f8b" font-weight="700">t-1</text>
+<text x="470.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1f5f8b" font-weight="normal">= 0.5250</text>
+<rect x="607.0" y="120.0" width="126" height="60" rx="9" fill="#fce8f0" stroke="#c2185b" stroke-width="2"/>
+<text x="670.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#c2185b" font-weight="normal">output</text>
+<text x="660.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c2185b" font-weight="700">h</text>
+<text x="669.0" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#c2185b" font-weight="700">t-1</text>
+<text x="670.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c2185b" font-weight="normal">= 0.1426</text>
+<rect x="807.0" y="120.0" width="126" height="60" rx="9" fill="#3f2a1d" stroke="#3f2a1d" stroke-width="2"/>
+<text x="870.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="normal">Loss</text>
+<text x="870.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff" font-weight="700">L</text>
+<text x="870.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#fff" font-weight="normal">= 0.4321</text>
+<line x1="137.0" y1="150" x2="203.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#po-f)"/>
+<text x="170.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">× x / × h / × 1</text>
+<line x1="337.0" y1="150" x2="403.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#po-f)"/>
+<text x="370.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">σ( · )</text>
+<line x1="537.0" y1="150" x2="603.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#po-f)"/>
+<text x="570.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">× tanh(c)</text>
+<line x1="737.0" y1="150" x2="803.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#po-f)"/>
+<text x="770.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">(target − ·)²</text>
+<rect x="718.0" y="58" width="104" height="40" rx="7" fill="#fdecea" stroke="#c0392b" stroke-width="1.6"/>
+<text x="770.0" y="74" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#c0392b" font-weight="normal">target</text>
+<text x="770.0" y="90" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="700">= 0.8</text>
+<line x1="770.0" y1="98" x2="770.0" y2="142" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#po-g)"/>
+<text x="270.0" y="196.0" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#9a9084" font-weight="normal">w_ho·h + b_o also enter here — that is why all three params share this path</text>
+<line x1="262.0" y1="265" x2="78.0" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#po-b)"/>
+<text x="170.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step O3</text>
+<text x="170.0" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">× x, × h, or × 1</text>
+<text x="170.0" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">(one per param)</text>
+<line x1="70.0" y1="204.0" x2="70.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="270.0" y1="204.0" x2="270.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="462.0" y1="265" x2="278.0" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#po-b)"/>
+<text x="370.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step O2</text>
+<text x="370.0" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂o/∂net = o(1−o)</text>
+<text x="370.0" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= 0.2494</text>
+<line x1="270.0" y1="204.0" x2="270.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="470.0" y1="204.0" x2="470.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="662.0" y1="265" x2="478.0" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#po-b)"/>
+<text x="570.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step O1</text>
+<text x="570.0" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂h/∂o = tanh(c)</text>
+<text x="570.0" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= 0.2717</text>
+<line x1="470.0" y1="204.0" x2="470.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="670.0" y1="204.0" x2="670.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="862.0" y1="265" x2="678.0" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#po-b)"/>
+<text x="770.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Shared</text>
+<text x="770.0" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂L/∂h = −2(t−h)</text>
+<text x="770.0" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= −1.3147</text>
+<line x1="670.0" y1="204.0" x2="670.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="870.0" y1="204.0" x2="870.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+</svg>
+<p class="diagcap">The output-gate path. Identical to the single-weight document &mdash; except now we use the leftmost segment three times, once per parameter.</p>
+
+<h3>The two path segments (shared by all three parameters)</h3>
+<div class="d o">
+<div class="dl">Step O1 &mdash; through the multiplication h = o &times; tanh(c)</div>
+\[ \frac{\partial h_{t\text{-}1}}{\partial o_{t\text{-}1}} = \tanh(c_{t\text{-}1}) = \mathbf{0.2717} \]
+</div>
+<div class="d o">
+<div class="dl">Step O2 &mdash; through the sigmoid</div>
+\[ \frac{\partial o_{t\text{-}1}}{\partial \text{net}_o} = o_{t\text{-}1}(1-o_{t\text{-}1}) = 0.5250 \times 0.4750 = \mathbf{0.2494} \]
+</div>
+<div class="d o">
+<div class="dl">Gradient at the weighted sum (multiply the trunk so far)</div>
+\[ \frac{\partial L}{\partial \text{net}_o} = (-1.3147)(0.2717)(0.2494) = \mathbf{-0.0891} \]
+</div>
+
+<h3>The last segment &mdash; three variants of one rule</h3>
+<p>\(\text{net}_o = w_{xo_{t\text{-}1}}\!\cdot x_{t\text{-}1} + w_{ho_{t\text{-}1}}\!\cdot h_{t\text{-}2} + b_{o_{t\text{-}1}}\). Each parameter&rsquo;s derivative is simply <em>the value it was multiplied by</em>:</p>
+<div class="d o">
+<div class="dl">Step O3 &mdash; one line per parameter</div>
+\[ \frac{\partial L}{\partial w_{xo_{t\text{-}1}}} = -0.0891 \times x_{t\text{-}1} = -0.0891 \times 0.5 = \mathbf{-0.0445} \]
+\[ \frac{\partial L}{\partial w_{ho_{t\text{-}1}}} = -0.0891 \times h_{t\text{-}2} = -0.0891 \times 0 = \mathbf{0} \]
+\[ \frac{\partial L}{\partial b_{o_{t\text{-}1}}} = -0.0891 \times 1 = \mathbf{-0.0891} \]
+</div>
+<div class="res"><strong>Updates (\(w^{new} = w^{old} - 0.1\cdot\text{grad}\)):</strong>
+\(w_{xo}: 0.4 \to \mathbf{0.4045}\); &nbsp;
+\(w_{ho}: 0.5 \to \mathbf{0.5}\) (unchanged &mdash; it multiplied \(h_{t\text{-}2}=0\), so it had no influence to correct); &nbsp;
+\(b_o: -0.1 \to \mathbf{-0.0911}\)</div>
+
+<!-- ═══════════ CELL TRUNK ═══════════ -->
+<div class="sh c">The Cell-State Trunk &mdash; \(\partial L / \partial c_{t\text{-}1}\) (shared by the remaining six parameters)</div>
+
+<p>Everything that is not in the output gate reached the loss by first building the cell state. So before touching those parameters, we extend the trunk from \(h\) down to \(c\) &mdash; two more segments, computed once, reused six times:</p>
+
+<svg viewBox="0 0 940 430" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="pt-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="pt-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="pt-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#8a7f70" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470.0" y="30" text-anchor="middle" font-family="sans-serif" font-size="13.5" fill="#3f2a1d" font-weight="700">CELL-STATE TRUNK — how the gradient reaches c (shared by SIX parameters)</text>
+<rect x="7.0" y="120.0" width="126" height="60" rx="9" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+<text x="70.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#b45309" font-weight="normal">cell state</text>
+<text x="60.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#b45309" font-weight="700">c</text>
+<text x="69.0" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#b45309" font-weight="700">t-1</text>
+<text x="70.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#b45309" font-weight="normal">= 0.2787</text>
+<rect x="273.6666666666667" y="120.0" width="126" height="60" rx="9" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+<text x="336.6666666666667" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#b45309" font-weight="normal">tanh of cell</text>
+<text x="336.6666666666667" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#b45309" font-weight="700">tanh(c)</text>
+<text x="336.6666666666667" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#b45309" font-weight="normal">= 0.2717</text>
+<rect x="540.3333333333334" y="120.0" width="126" height="60" rx="9" fill="#fce8f0" stroke="#c2185b" stroke-width="2"/>
+<text x="603.3333333333334" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#c2185b" font-weight="normal">output</text>
+<text x="593.3333333333334" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c2185b" font-weight="700">h</text>
+<text x="602.3333333333334" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#c2185b" font-weight="700">t-1</text>
+<text x="603.3333333333334" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c2185b" font-weight="normal">= 0.1426</text>
+<rect x="807.0" y="120.0" width="126" height="60" rx="9" fill="#3f2a1d" stroke="#3f2a1d" stroke-width="2"/>
+<text x="870.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#fff" font-weight="normal">Loss</text>
+<text x="870.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#fff" font-weight="700">L</text>
+<text x="870.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#fff" font-weight="normal">= 0.4321</text>
+<line x1="137.0" y1="150" x2="269.6666666666667" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#pt-f)"/>
+<text x="203.33333333333334" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">tanh( · )</text>
+<line x1="403.6666666666667" y1="150" x2="536.3333333333334" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#pt-f)"/>
+<text x="470.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">× o</text>
+<line x1="670.3333333333334" y1="150" x2="803.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#pt-f)"/>
+<text x="736.6666666666667" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">(target − ·)²</text>
+<rect x="418.0" y="58" width="104" height="40" rx="7" fill="#e8f1f8" stroke="#1f5f8b" stroke-width="1.6"/>
+<text x="470.0" y="74" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#1f5f8b" font-weight="normal">Output gate</text>
+<text x="470.0" y="90" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1f5f8b" font-weight="700">o = 0.5250</text>
+<line x1="470.0" y1="98" x2="470.0" y2="142" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#pt-g)"/>
+<rect x="684.6666666666667" y="58" width="104" height="40" rx="7" fill="#fdecea" stroke="#c0392b" stroke-width="1.6"/>
+<text x="736.6666666666667" y="74" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#c0392b" font-weight="normal">target</text>
+<text x="736.6666666666667" y="90" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="700">= 0.8</text>
+<line x1="736.6666666666667" y1="98" x2="736.6666666666667" y2="142" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#pt-g)"/>
+<line x1="328.6666666666667" y1="265" x2="78.0" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#pt-b)"/>
+<text x="203.33333333333334" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step C2</text>
+<text x="203.33333333333334" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂tanh/∂c = 1−tanh²(c)</text>
+<text x="203.33333333333334" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= 0.9262</text>
+<line x1="70.0" y1="204.0" x2="70.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="336.6666666666667" y1="204.0" x2="336.6666666666667" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="595.3333333333334" y1="265" x2="344.6666666666667" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#pt-b)"/>
+<text x="470.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step C1</text>
+<text x="470.0" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂h/∂tanh(c) = o</text>
+<text x="470.0" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= 0.5250</text>
+<line x1="336.6666666666667" y1="204.0" x2="336.6666666666667" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="603.3333333333334" y1="204.0" x2="603.3333333333334" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="862.0" y1="265" x2="611.3333333333334" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#pt-b)"/>
+<text x="736.6666666666667" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Shared</text>
+<text x="736.6666666666667" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂L/∂h = −2(t−h)</text>
+<text x="736.6666666666667" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= −1.3147</text>
+<line x1="603.3333333333334" y1="204.0" x2="603.3333333333334" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="870.0" y1="204.0" x2="870.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+</svg>
+<p class="diagcap">The trunk from the loss down to the cell state. \(h = o \times \tanh(c)\), so going backward we pick up a factor of \(o\) (Step C1), then the tanh derivative (Step C2).</p>
+
+<div class="d c">
+<div class="dl">Step C1 &mdash; through h = o &times; tanh(c), this time with respect to tanh(c)</div>
+\[ \frac{\partial h_{t\text{-}1}}{\partial \tanh(c_{t\text{-}1})} = o_{t\text{-}1} = \mathbf{0.5250} \]
+</div>
+<div class="d c">
+<div class="dl">Step C2 &mdash; through the tanh</div>
+\[ \frac{\partial \tanh(c_{t\text{-}1})}{\partial c_{t\text{-}1}} = 1 - \tanh^2(c_{t\text{-}1}) = 1 - (0.2717)^2 = \mathbf{0.9262} \]
+</div>
+<div class="d c">
+<div class="dl">Gradient at the cell state (multiply the trunk)</div>
+\[ \frac{\partial L}{\partial c_{t\text{-}1}} = (-1.3147)(0.5250)(0.9262) = \mathbf{-0.6393} \]
+</div>
+<div class="res">Every remaining parameter&rsquo;s chain now starts from \(-0.6393\). Notice how little the tanh shrank the gradient (0.9262 &asymp; 1): with \(c\) small, the cell state is a near-transparent gradient highway.</div>
+
+<h3>The three-way split at the cell state</h3>
+<p>The cell state was built as \(c_{t\text{-}1} = f\cdot c_{t\text{-}2} + i1 \cdot i2\). Three quantities went in, so the gradient splits three ways &mdash; and each factor is, as always, <em>whatever the quantity was multiplied by</em>:</p>
+<div class="d c">
+<div class="dl">One line per branch</div>
+\[ \frac{\partial c_{t\text{-}1}}{\partial f_{t\text{-}1}} = c_{t\text{-}2} = \mathbf{0} \qquad
+   \frac{\partial c_{t\text{-}1}}{\partial i1_{t\text{-}1}} = i2_{t\text{-}1} = \mathbf{0.5717} \qquad
+   \frac{\partial c_{t\text{-}1}}{\partial i2_{t\text{-}1}} = i1_{t\text{-}1} = \mathbf{0.4875} \]
+</div>
+
+<!-- ═══════════ I1 BRANCH ═══════════ -->
+<div class="sh i1">Branch 2 &mdash; &ldquo;% Potential Memory&rdquo; (sigmoid block): \(w_{xi1}\), \(w_{hi1}\), \(b_{i1}\)</div>
+
+<svg viewBox="0 0 940 430" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="p1-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="p1-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="p1-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#8a7f70" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470.0" y="30" text-anchor="middle" font-family="sans-serif" font-size="13.5" fill="#3f2a1d" font-weight="700">I1 BRANCH (% Potential Memory, sigmoid) — from c to its three params</text>
+<rect x="7.0" y="120.0" width="126" height="60" rx="9" fill="#e8f1f8" stroke="#2c5f8a" stroke-width="2"/>
+<text x="70.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#2c5f8a" font-weight="normal">the 3 params</text>
+<text x="60.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#2c5f8a" font-weight="700">w</text>
+<text x="69.0" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#2c5f8a" font-weight="700">xi1 ...</text>
+<text x="70.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#2c5f8a" font-weight="normal">(see below)</text>
+<rect x="273.6666666666667" y="120.0" width="126" height="60" rx="9" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+<text x="336.6666666666667" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#c0392b" font-weight="normal">weighted sum</text>
+<text x="326.6666666666667" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">net</text>
+<text x="345.6666666666667" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#c0392b" font-weight="700">i1</text>
+<text x="336.6666666666667" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="normal">= −0.05</text>
+<rect x="540.3333333333334" y="120.0" width="126" height="60" rx="9" fill="#e8f1f8" stroke="#2c5f8a" stroke-width="2"/>
+<text x="603.3333333333334" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#2c5f8a" font-weight="normal">sigmoid block</text>
+<text x="593.3333333333334" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#2c5f8a" font-weight="700">i1</text>
+<text x="607.3333333333334" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#2c5f8a" font-weight="700">t-1</text>
+<text x="603.3333333333334" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#2c5f8a" font-weight="normal">= 0.4875</text>
+<rect x="807.0" y="120.0" width="126" height="60" rx="9" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+<text x="870.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#b45309" font-weight="normal">cell state</text>
+<text x="860.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#b45309" font-weight="700">c</text>
+<text x="869.0" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#b45309" font-weight="700">t-1</text>
+<text x="870.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#b45309" font-weight="normal">= 0.2787</text>
+<line x1="137.0" y1="150" x2="269.6666666666667" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#p1-f)"/>
+<text x="203.33333333333334" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">× x / × h / × 1</text>
+<line x1="403.6666666666667" y1="150" x2="536.3333333333334" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#p1-f)"/>
+<text x="470.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">σ( · )</text>
+<line x1="670.3333333333334" y1="150" x2="803.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#p1-f)"/>
+<text x="736.6666666666667" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">× i2</text>
+<rect x="684.6666666666667" y="58" width="104" height="40" rx="7" fill="#f5eaf8" stroke="#7b2d8b" stroke-width="1.6"/>
+<text x="736.6666666666667" y="74" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#7b2d8b" font-weight="normal">tanh block</text>
+<text x="736.6666666666667" y="90" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#7b2d8b" font-weight="700">i2 = 0.5717</text>
+<line x1="736.6666666666667" y1="98" x2="736.6666666666667" y2="142" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#p1-g)"/>
+<text x="336.6666666666667" y="196.0" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#9a9084" font-weight="normal">the other two terms (w_hi1·h + b_i1) enter here</text>
+<line x1="328.6666666666667" y1="265" x2="78.0" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#p1-b)"/>
+<text x="203.33333333333334" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step I1-3</text>
+<text x="203.33333333333334" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">× x, × h, or × 1</text>
+<text x="203.33333333333334" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">(one per param)</text>
+<line x1="70.0" y1="204.0" x2="70.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="336.6666666666667" y1="204.0" x2="336.6666666666667" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="595.3333333333334" y1="265" x2="344.6666666666667" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#p1-b)"/>
+<text x="470.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step I1-2</text>
+<text x="470.0" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂i1/∂net = i1(1−i1)</text>
+<text x="470.0" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= 0.2498</text>
+<line x1="336.6666666666667" y1="204.0" x2="336.6666666666667" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="603.3333333333334" y1="204.0" x2="603.3333333333334" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="862.0" y1="265" x2="611.3333333333334" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#p1-b)"/>
+<text x="736.6666666666667" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step I1-1</text>
+<text x="736.6666666666667" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂c/∂i1 = i2</text>
+<text x="736.6666666666667" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= 0.5717</text>
+<line x1="603.3333333333334" y1="204.0" x2="603.3333333333334" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="870.0" y1="204.0" x2="870.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+</svg>
+<p class="diagcap">The i1 branch: from the cell state, back through the multiplication (&times; i2), through the sigmoid, to the three parameters.</p>
+
+<div class="d i1">
+<div class="dl">Step I1-1 &mdash; into the branch (&times; the other factor, i2)</div>
+\[ \frac{\partial L}{\partial i1_{t\text{-}1}} = -0.6393 \times 0.5717 = \mathbf{-0.3655} \]
+</div>
+<div class="d i1">
+<div class="dl">Step I1-2 &mdash; through the sigmoid</div>
+\[ \frac{\partial i1_{t\text{-}1}}{\partial \text{net}_{i1}} = i1(1-i1) = 0.4875 \times 0.5125 = \mathbf{0.2498} \qquad
+   \frac{\partial L}{\partial \text{net}_{i1}} = -0.3655 \times 0.2498 = \mathbf{-0.0913} \]
+</div>
+<div class="d i1">
+<div class="dl">Step I1-3 &mdash; last segment, one line per parameter</div>
+\[ \frac{\partial L}{\partial w_{xi1_{t\text{-}1}}} = -0.0913 \times 0.5 = \mathbf{-0.0457} \qquad
+   \frac{\partial L}{\partial w_{hi1_{t\text{-}1}}} = -0.0913 \times 0 = \mathbf{0} \qquad
+   \frac{\partial L}{\partial b_{i1_{t\text{-}1}}} = \mathbf{-0.0913} \]
+</div>
+<div class="res"><strong>Updates:</strong>
+\(w_{xi1}: 0.3 \to \mathbf{0.3046}\); &nbsp;
+\(w_{hi1}: 0.6 \to \mathbf{0.6}\) (unchanged); &nbsp;
+\(b_{i1}: -0.2 \to \mathbf{-0.1909}\)</div>
+
+<!-- ═══════════ I2 BRANCH ═══════════ -->
+<div class="sh i2">Branch 3 &mdash; &ldquo;Potential Long Memory&rdquo; (tanh block): \(w_{xi2}\), \(w_{hi2}\), \(b_{i2}\)</div>
+
+<svg viewBox="0 0 940 430" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto;display:block;margin:10px auto;background:#faf8f3;border-radius:10px;border:1px solid #d4ccc0;">
+<defs><marker id="p2-f" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#7b2d8b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="p2-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker><marker id="p2-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1,2 L9,5 L1,8" fill="none" stroke="#8a7f70" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text x="470.0" y="30" text-anchor="middle" font-family="sans-serif" font-size="13.5" fill="#3f2a1d" font-weight="700">I2 BRANCH (Potential Long Memory, tanh) — from c to its three params</text>
+<rect x="7.0" y="120.0" width="126" height="60" rx="9" fill="#f5eaf8" stroke="#7b2d8b" stroke-width="2"/>
+<text x="70.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7b2d8b" font-weight="normal">the 3 params</text>
+<text x="60.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#7b2d8b" font-weight="700">w</text>
+<text x="69.0" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#7b2d8b" font-weight="700">xi2 ...</text>
+<text x="70.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#7b2d8b" font-weight="normal">(see below)</text>
+<rect x="273.6666666666667" y="120.0" width="126" height="60" rx="9" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+<text x="336.6666666666667" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#c0392b" font-weight="normal">weighted sum</text>
+<text x="326.6666666666667" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="700">net</text>
+<text x="345.6666666666667" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#c0392b" font-weight="700">i2</text>
+<text x="336.6666666666667" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#c0392b" font-weight="normal">= 0.65</text>
+<rect x="540.3333333333334" y="120.0" width="126" height="60" rx="9" fill="#f5eaf8" stroke="#7b2d8b" stroke-width="2"/>
+<text x="603.3333333333334" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7b2d8b" font-weight="normal">tanh block</text>
+<text x="593.3333333333334" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#7b2d8b" font-weight="700">i2</text>
+<text x="607.3333333333334" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#7b2d8b" font-weight="700">t-1</text>
+<text x="603.3333333333334" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#7b2d8b" font-weight="normal">= 0.5717</text>
+<rect x="807.0" y="120.0" width="126" height="60" rx="9" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
+<text x="870.0" y="139" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#b45309" font-weight="normal">cell state</text>
+<text x="860.0" y="158" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#b45309" font-weight="700">c</text>
+<text x="869.0" y="162" text-anchor="start" font-family="sans-serif" font-size="8.5" fill="#b45309" font-weight="700">t-1</text>
+<text x="870.0" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#b45309" font-weight="normal">= 0.2787</text>
+<line x1="137.0" y1="150" x2="269.6666666666667" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#p2-f)"/>
+<text x="203.33333333333334" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">× x / × h / × 1</text>
+<line x1="403.6666666666667" y1="150" x2="536.3333333333334" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#p2-f)"/>
+<text x="470.0" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">tanh( · )</text>
+<line x1="670.3333333333334" y1="150" x2="803.0" y2="150" stroke="#7b2d8b" stroke-width="2.6" marker-end="url(#p2-f)"/>
+<text x="736.6666666666667" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7b2d8b" font-weight="700">× i1</text>
+<rect x="684.6666666666667" y="58" width="104" height="40" rx="7" fill="#e8f1f8" stroke="#2c5f8a" stroke-width="1.6"/>
+<text x="736.6666666666667" y="74" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#2c5f8a" font-weight="normal">sigmoid block</text>
+<text x="736.6666666666667" y="90" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#2c5f8a" font-weight="700">i1 = 0.4875</text>
+<line x1="736.6666666666667" y1="98" x2="736.6666666666667" y2="142" stroke="#8a7f70" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#p2-g)"/>
+<text x="336.6666666666667" y="196.0" text-anchor="middle" font-family="sans-serif" font-size="9.5" fill="#9a9084" font-weight="normal">the other two terms (w_hi2·h + b_i2) enter here</text>
+<line x1="328.6666666666667" y1="265" x2="78.0" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#p2-b)"/>
+<text x="203.33333333333334" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step I2-3</text>
+<text x="203.33333333333334" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">× x, × h, or × 1</text>
+<text x="203.33333333333334" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">(one per param)</text>
+<line x1="70.0" y1="204.0" x2="70.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="336.6666666666667" y1="204.0" x2="336.6666666666667" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="595.3333333333334" y1="265" x2="344.6666666666667" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#p2-b)"/>
+<text x="470.0" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step I2-2</text>
+<text x="470.0" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂i2/∂net = 1−i2²</text>
+<text x="470.0" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= 0.6732</text>
+<line x1="336.6666666666667" y1="204.0" x2="336.6666666666667" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="603.3333333333334" y1="204.0" x2="603.3333333333334" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="862.0" y1="265" x2="611.3333333333334" y2="265" stroke="#c0392b" stroke-width="2.6" marker-end="url(#p2-b)"/>
+<text x="736.6666666666667" y="253" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="700">Step I2-1</text>
+<text x="736.6666666666667" y="283" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#922b21" font-weight="normal">∂c/∂i2 = i1</text>
+<text x="736.6666666666667" y="299" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#922b21" font-weight="700">= 0.4875</text>
+<line x1="603.3333333333334" y1="204.0" x2="603.3333333333334" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+<line x1="870.0" y1="204.0" x2="870.0" y2="257" stroke="#d9c9c2" stroke-width="1.2" stroke-dasharray="3,3"/>
+</svg>
+<p class="diagcap">The i2 branch: same shape as i1, but the activation is tanh &mdash; so Step I2-2 uses the tanh derivative instead of the sigmoid&rsquo;s.</p>
+
+<div class="d i2">
+<div class="dl">Step I2-1 &mdash; into the branch (&times; the other factor, i1)</div>
+\[ \frac{\partial L}{\partial i2_{t\text{-}1}} = -0.6393 \times 0.4875 = \mathbf{-0.3117} \]
+</div>
+<div class="d i2">
+<div class="dl">Step I2-2 &mdash; through the tanh</div>
+\[ \frac{\partial i2_{t\text{-}1}}{\partial \text{net}_{i2}} = 1 - i2^2 = 1-(0.5717)^2 = \mathbf{0.6732} \qquad
+   \frac{\partial L}{\partial \text{net}_{i2}} = -0.3117 \times 0.6732 = \mathbf{-0.2098} \]
+</div>
+<div class="d i2">
+<div class="dl">Step I2-3 &mdash; last segment, one line per parameter</div>
+\[ \frac{\partial L}{\partial w_{xi2_{t\text{-}1}}} = -0.2098 \times 0.5 = \mathbf{-0.1049} \qquad
+   \frac{\partial L}{\partial w_{hi2_{t\text{-}1}}} = -0.2098 \times 0 = \mathbf{0} \qquad
+   \frac{\partial L}{\partial b_{i2_{t\text{-}1}}} = \mathbf{-0.2098} \]
+</div>
+<div class="res"><strong>Updates:</strong>
+\(w_{xi2}: 0.7 \to \mathbf{0.7105}\); &nbsp;
+\(w_{hi2}: 0.2 \to \mathbf{0.2}\) (unchanged); &nbsp;
+\(b_{i2}: 0.3 \to \mathbf{0.3210}\)</div>
+
+<div class="int"><strong>Compare I1-2 and I2-2:</strong> the tanh derivative (0.6732) is 2.7&times; the sigmoid derivative (0.2498) at these values. The gradient flows into the value-proposing block far more easily than into the gating block &mdash; the network is being corrected most strongly on <em>what</em> it proposed to remember, and more gently on <em>how much</em> of it to let in.</div>
+
+<!-- ═══════════ FORGET ═══════════ -->
+<div class="sh f">Branch 4 &mdash; The Forget Gate: \(w_{xf}\), \(w_{hf}\), \(b_f\) (all zero this step)</div>
+
+<p>The forget branch begins with \(\partial c_{t\text{-}1} / \partial f_{t\text{-}1} = c_{t\text{-}2}\) &mdash; and \(c_{t\text{-}2} = 0\). That single zero, right at the branch point, multiplies through everything downstream:</p>
+<div class="d f">
+<div class="dl">The whole branch in three lines</div>
+\[ \frac{\partial L}{\partial f_{t\text{-}1}} = -0.6393 \times c_{t\text{-}2} = -0.6393 \times 0 = \mathbf{0} \]
+\[ \frac{\partial L}{\partial \text{net}_f} = 0 \times f(1-f) = 0 \times 0.2425 = \mathbf{0} \]
+\[ \frac{\partial L}{\partial w_{xf}} = \frac{\partial L}{\partial w_{hf}} = \frac{\partial L}{\partial b_f} = \mathbf{0} \]
+</div>
+<div class="warn"><strong>This is not a bug &mdash; it is the math being honest.</strong> The forget gate&rsquo;s only job is deciding what fraction of the <em>old</em> memory to keep. At \(t\text{-}1\) the old memory was empty (\(c_{t\text{-}2}=0\)), so the gate&rsquo;s decision had no effect on anything &mdash; and a parameter that had no effect earns no correction. At time step \(t\), where \(c_{t\text{-}1}=0.2787 \neq 0\), this branch comes alive.</div>
+
+<!-- ═══════════ SUMMARY ═══════════ -->
+<div class="sh u">Every Parameter, Updated &mdash; The Complete Table</div>
+
+<table class="tbl">
+<thead><tr><th>Block</th><th>Parameter</th><th>Chain (factors multiplied)</th><th>Gradient</th><th>Old</th><th>New</th></tr></thead>
+<tbody>
+<tr class="or"><td rowspan="3">Output gate</td><td>w_xo</td><td>(−1.3147)(0.2717)(0.2494)(0.5)</td><td>−0.0445</td><td>0.4</td><td><strong>0.4045</strong></td></tr>
+<tr class="or"><td>w_ho</td><td>(−1.3147)(0.2717)(0.2494)(0)</td><td>0</td><td>0.5</td><td><strong>0.5</strong></td></tr>
+<tr class="or"><td>b_o</td><td>(−1.3147)(0.2717)(0.2494)(1)</td><td>−0.0891</td><td>−0.1</td><td><strong>−0.0911</strong></td></tr>
+<tr class="i1r"><td rowspan="3">% Potential Memory (σ)</td><td>w_xi1</td><td>(−0.6393)(0.5717)(0.2498)(0.5)</td><td>−0.0457</td><td>0.3</td><td><strong>0.3046</strong></td></tr>
+<tr class="i1r"><td>w_hi1</td><td>(−0.6393)(0.5717)(0.2498)(0)</td><td>0</td><td>0.6</td><td><strong>0.6</strong></td></tr>
+<tr class="i1r"><td>b_i1</td><td>(−0.6393)(0.5717)(0.2498)(1)</td><td>−0.0913</td><td>−0.2</td><td><strong>−0.1909</strong></td></tr>
+<tr class="i2r"><td rowspan="3">Potential Long Memory (tanh)</td><td>w_xi2</td><td>(−0.6393)(0.4875)(0.6732)(0.5)</td><td>−0.1049</td><td>0.7</td><td><strong>0.7105</strong></td></tr>
+<tr class="i2r"><td>w_hi2</td><td>(−0.6393)(0.4875)(0.6732)(0)</td><td>0</td><td>0.2</td><td><strong>0.2</strong></td></tr>
+<tr class="i2r"><td>b_i2</td><td>(−0.6393)(0.4875)(0.6732)(1)</td><td>−0.2098</td><td>0.3</td><td><strong>0.3210</strong></td></tr>
+<tr class="fr"><td rowspan="3">Forget gate</td><td>w_xf</td><td>(−0.6393)(0)(&hellip;)</td><td>0</td><td>0.5</td><td><strong>0.5</strong></td></tr>
+<tr class="fr"><td>w_hf</td><td>(−0.6393)(0)(&hellip;)</td><td>0</td><td>0.4</td><td><strong>0.4</strong></td></tr>
+<tr class="fr"><td>b_f</td><td>(−0.6393)(0)(&hellip;)</td><td>0</td><td>0.1</td><td><strong>0.1</strong></td></tr>
+</tbody>
+</table>
+
+<div class="res"><strong>The chain column IS the map.</strong> Read any row and you can trace its factors on the master diagram: the first number is the trunk (\(-1.3147\) if the path goes through \(o\); \(-0.6393\) if it goes through \(c\)), the middle numbers are the branch segments, and the last number is what the parameter was multiplied by in the forward pass (\(x=0.5\), \(h_{t\text{-}2}=0\), or \(1\) for a bias).</div>
+
+<div class="nb"><strong>Two patterns worth noticing in the final table.</strong>
+(1) Every <em>hidden</em> weight (\(w_{ho}, w_{hi1}, w_{hi2}, w_{hf}\)) got gradient 0 &mdash; all for the same reason: they multiplied \(h_{t\text{-}2}=0\) in the forward pass. A weight that touched nothing learns nothing.
+(2) Every <em>non-zero</em> gradient is negative, so every updated weight moved <em>up</em> &mdash; consistent with one story: the output (0.1426) was below the target (0.8), and every live parameter is being nudged in the direction that raises it. At time step \(t\), with \(h_{t\text{-}1}\) and \(c_{t\text{-}1}\) both non-zero, all twelve parameters participate &mdash; and the gradient additionally flows <em>backward through time</em> into this step&rsquo;s computation. That is Backpropagation Through Time, and it is the natural next document.</div>
+
+<div class="footer">
+Full single-step backpropagation at t-1 &mdash; all 8 weights and 4 biases, using your LSTM diagram&rsquo;s names.<br>
+Loss \(L=(\text{target}-h_{t\text{-}1})^2\), target \(=0.8\), learning rate \(=0.1\).
+</div>
+
+</body></html>
