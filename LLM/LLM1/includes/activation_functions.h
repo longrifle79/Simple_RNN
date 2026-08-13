@@ -24,6 +24,11 @@
 // A bag of small mathematical helpers. Layers inherit from it, exactly like the
 // LSTM gates inherited sigmoid and tanh.
 // ────────────────────────────────────────────────────────────────────────────────
+
+
+
+
+
 class Activation_Functions
 {
 public:
@@ -50,10 +55,17 @@ public:
     // a chain of matrix multiplies collapses into one single matrix multiply.
     // The non-linearity is what makes depth buy you anything.
     // ────────────────────────────────
+
+
+
     float gelu(float x);
+
+
 
     // Derivative of GELU with respect to its input.
     // Not called during the forward pass; it is here ready for backpropagation.
+
+    
     float gelu_derivative(float x);
 
     // ────────────────────────────────
@@ -73,6 +85,8 @@ public:
     //
     // Modifies the matrix in place.
     // ────────────────────────────────
+
+
     void softmax_rows_in_place(Matrix& matrix);
 
     // ────────────────────────────────
@@ -83,6 +97,8 @@ public:
     // Rather than filling them with a large negative number and exponentiating
     // anyway, we simply never look at them and write 0 into those slots.
     // ────────────────────────────────
+
+
     void softmax_row_prefix_in_place(Matrix& matrix, int row, int count);
 };
 
